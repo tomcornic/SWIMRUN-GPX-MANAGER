@@ -6,6 +6,7 @@ from wtforms import (
     FloatField,
     PasswordField,
     SelectField,
+    SelectMultipleField,
     StringField,
     TimeField,
 )
@@ -94,3 +95,38 @@ class MareeCsvForm(FlaskForm):
         validators=[FileRequired(), FileAllowed(["csv"], "Fichier .csv attendu.")],
     )
     fuseau_source = SelectField("Fuseau de la table source", choices=FUSEAU_CHOICES)
+
+
+POI_TYPE_CHOICES = [
+    ("ravitaillement", "Ravitaillement"),
+    ("entree_eau", "Entrée dans l'eau"),
+    ("sortie_eau", "Sortie de l'eau"),
+    ("bouee", "Bouée directionnelle"),
+]
+
+COTE_PASSAGE_CHOICES = [
+    ("", "—"),
+    ("gauche", "À laisser à gauche"),
+    ("droite", "À laisser à droite"),
+]
+
+
+class PoiForm(FlaskForm):
+    type = SelectField("Type", choices=POI_TYPE_CHOICES)
+    nom = StringField("Nom", validators=[DataRequired(), Length(max=100)])
+    description = StringField("Description", validators=[Optional(), Length(max=300)])
+    lat = FloatField("Latitude", validators=[DataRequired()])
+    lon = FloatField("Longitude", validators=[DataRequired()])
+    cote_passage = SelectField(
+        "Côté de passage (bouées uniquement)", choices=COTE_PASSAGE_CHOICES, validators=[Optional()]
+    )
+    # Le choices réel (courses de l'événement) est fixé dans la route, avant validation.
+    courses = SelectMultipleField("Course(s) concernée(s)", coerce=int, validators=[DataRequired()])
+
+    def validate(self, extra_validators=None) -> bool:
+        if not super().validate(extra_validators=extra_validators):
+            return False
+        if self.type.data == "bouee" and not self.cote_passage.data:
+            self.cote_passage.errors.append("Le côté de passage est requis pour une bouée.")
+            return False
+        return True

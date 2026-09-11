@@ -3,5 +3,20 @@ import { createApp } from "vue";
 
 import "../shared/base.css";
 import App from "./App.vue";
+import PoiMapPicker from "./components/PoiMapPicker.vue";
 
-createApp(App).use(createPinia()).mount("#app");
+if (document.getElementById("app")) {
+  createApp(App).use(createPinia()).mount("#app");
+}
+
+const poiMapEl = document.getElementById("poi-map-app");
+if (poiMapEl) {
+  const latInitial = poiMapEl.dataset.latInitial;
+  const lonInitial = poiMapEl.dataset.lonInitial;
+  createApp(PoiMapPicker, {
+    latInputId: poiMapEl.dataset.latInput,
+    lonInputId: poiMapEl.dataset.lonInput,
+    latInitial: latInitial ? Number(latInitial) : undefined,
+    lonInitial: lonInitial ? Number(lonInitial) : undefined,
+  }).mount(poiMapEl);
+}

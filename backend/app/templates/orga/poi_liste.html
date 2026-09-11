@@ -1,0 +1,49 @@
+{% extends "orga/_layout.html" %}
+
+{% block title %}POI — Swimrun de Saint-Pabu{% endblock %}
+
+{% block orga_content %}
+<h1>Points d'intérêt</h1>
+
+{% set labels_type = {"ravitaillement": "Ravitaillement", "entree_eau": "Entrée dans l'eau",
+                       "sortie_eau": "Sortie de l'eau", "bouee": "Bouée directionnelle"} %}
+
+{% if not event %}
+  <p>Configurez d'abord l'<a href="{{ url_for('orga.evenement') }}">événement</a>.</p>
+{% else %}
+  <table>
+    <thead>
+      <tr><th>Nom</th><th>Type</th><th>Courses (km)</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for poi in pois %}
+      <tr>
+        <td>{{ poi.nom }}</td>
+        <td>
+          {{ labels_type[poi.type] }}
+          {% if poi.cote_passage %} ({{ "à gauche" if poi.cote_passage == "gauche" else "à droite" }}){% endif %}
+        </td>
+        <td>
+          {% for lien in poi.course_liens %}
+            {{ lien.course.name }} ({{ "%.2f" | format(lien.distance_m / 1000) }} km){% if not loop.last %}, {% endif %}
+          {% endfor %}
+        </td>
+        <td>
+          <a href="{{ url_for('orga.poi_modifier', poi_id=poi.id) }}">Modifier</a>
+          &middot;
+          <form method="post" action="{{ url_for('orga.poi_supprimer', poi_id=poi.id) }}"
+                style="display:inline" onsubmit="return confirm('Supprimer ce POI ?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" style="border:none;background:none;color:#b91c1c;cursor:pointer;font:inherit;">Supprimer</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4">Aucun POI pour l'instant.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p><a class="btn" href="{{ url_for('orga.poi_nouveau') }}">Nouveau POI</a></p>
+{% endif %}
+{% endblock %}

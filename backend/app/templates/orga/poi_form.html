@@ -1,0 +1,48 @@
+{% extends "orga/_layout.html" %}
+{% set asset = vite_asset('orga') %}
+
+{% block title %}{{ "Modifier" if poi else "Nouveau" }} POI — Swimrun de Saint-Pabu{% endblock %}
+
+{% block orga_head %}
+  {% for href in asset.css_hrefs %}
+  <link rel="stylesheet" href="{{ href }}">
+  {% endfor %}
+{% endblock %}
+
+{% block orga_content %}
+<h1>{{ "Modifier le POI" if poi else "Nouveau POI" }}</h1>
+<form method="post" novalidate>
+  {{ form.hidden_tag() }}
+  <div class="field">{{ form.type.label }} {{ form.type() }}</div>
+  <div class="field">{{ form.nom.label }} {{ form.nom() }}
+    {% for error in form.nom.errors %}<div class="errors">{{ error }}</div>{% endfor %}
+  </div>
+  <div class="field">{{ form.description.label }} {{ form.description() }}</div>
+
+  <div id="poi-map-app"
+       data-lat-input="{{ form.lat.id }}"
+       data-lon-input="{{ form.lon.id }}"
+       {% if poi %}data-lat-initial="{{ poi.lat }}" data-lon-initial="{{ poi.lon }}"{% endif %}
+  ></div>
+
+  <div class="field">{{ form.lat.label }} {{ form.lat() }}
+    {% for error in form.lat.errors %}<div class="errors">{{ error }}</div>{% endfor %}
+  </div>
+  <div class="field">{{ form.lon.label }} {{ form.lon() }}
+    {% for error in form.lon.errors %}<div class="errors">{{ error }}</div>{% endfor %}
+  </div>
+  <div class="field">{{ form.cote_passage.label }} {{ form.cote_passage() }}
+    {% for error in form.cote_passage.errors %}<div class="errors">{{ error }}</div>{% endfor %}
+  </div>
+  <div class="field">
+    {{ form.courses.label }} (Ctrl/Cmd + clic pour plusieurs)
+    {{ form.courses(size=4) }}
+    {% for error in form.courses.errors %}<div class="errors">{{ error }}</div>{% endfor %}
+  </div>
+
+  <button class="btn" type="submit">Enregistrer</button>
+</form>
+
+{% if asset.dev %}<script type="module" src="{{ asset.client_src }}"></script>{% endif %}
+<script type="module" src="{{ asset.script_src }}"></script>
+{% endblock %}

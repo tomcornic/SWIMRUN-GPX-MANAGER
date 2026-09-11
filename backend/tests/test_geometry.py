@@ -1,12 +1,29 @@
 import math
 
+import pytest
+
 from app.core.geometry import (
     EARTH_RADIUS_M,
     cumulative_distances_m,
     haversine_m,
     project_equirectangular,
+    project_point_onto_track,
     resample_by_distance,
 )
+
+REF_LAT, REF_LON = 48.565, -4.596
+
+
+def _offset_point(dx_m: float, dy_m: float) -> tuple[float, float]:
+    lat = REF_LAT + math.degrees(dy_m / EARTH_RADIUS_M)
+    lon = REF_LON + math.degrees(dx_m / (EARTH_RADIUS_M * math.cos(math.radians(REF_LAT))))
+    return (lat, lon)
+
+
+def _straight_track(length_m: float) -> list[tuple[float, float, float]]:
+    latlon = [_offset_point(0.0, y) for y in (0.0, length_m / 2, length_m)]
+    distances = cumulative_distances_m(latlon)
+    return [(lat, lon, d) for (lat, lon), d in zip(latlon, distances)]
 
 
 def test_haversine_zero_for_identical_points():
@@ -59,3 +76,32 @@ def test_resample_by_distance_regular_step():
 
 def test_resample_by_distance_empty():
     assert resample_by_distance([], step_m=5.0) == []
+
+
+def test_project_point_exactly_on_track():
+    track = _straight_track(1000.0)
+    point_on_track = _offset_point(0.0, 500.0)
+    assert project_point_onto_track(point_on_track, track) == pytest.approx(500.0, abs=5.0)
+
+
+def test_project_point_offset_to_the_side():
+    track = _straight_track(1000.0)
+    point_a_cote = _offset_point(20.0, 500.0)  # 20 m à l'est du tracé, à mi-hauteur
+    assert project_point_onto_track(point_a_cote, track) == pytest.approx(500.0, abs=5.0)
+
+
+def test_project_point_clamped_before_start():
+    track = _straight_track(1000.0)
+    point_avant = _offset_point(0.0, -200.0)
+    assert project_point_onto_track(point_avant, track) == pytest.approx(0.0, abs=5.0)
+
+
+def test_project_point_clamped_after_end():
+    track = _straight_track(1000.0)
+    point_apres = _offset_point(0.0, 1300.0)
+    assert project_point_onto_track(point_apres, track) == pytest.approx(1000.0, abs=5.0)
+
+
+def test_project_point_onto_single_point_track():
+    track = [(REF_LAT, REF_LON, 42.0)]
+    assert project_point_onto_track(_offset_point(100.0, 100.0), track) == 42.0

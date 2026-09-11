@@ -1,0 +1,24 @@
+{% extends "orga/_layout.html" %}
+
+{% block title %}Publier — Swimrun de Saint-Pabu{% endblock %}
+
+{% block orga_content %}
+<h1>Publier le parcours</h1>
+
+<p>
+  Génère les fichiers publics (<code>meta.json</code>, un <code>course-{id}.geojson</code> et un
+  <code>pois-{id}.json</code> par course) consommés par le site public — sans aucune allure ni
+  donnée de simulation.
+</p>
+
+{% if derniere_publication %}
+  <p>Dernière publication : <strong>{{ derniere_publication | heure_locale }}</strong> (Europe/Paris).</p>
+{% else %}
+  <p><em>Pas encore publié.</em></p>
+{% endif %}
+
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button class="btn" type="submit">Publier le parcours</button>
+</form>
+{% endblock %}

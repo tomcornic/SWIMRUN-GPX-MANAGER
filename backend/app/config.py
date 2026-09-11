@@ -13,3 +13,4 @@ class Config:
         "DATABASE_URL", f"sqlite:///{DEFAULT_DB_PATH}"
     )
     UPLOADS_DIR = BACKEND_DIR / "data" / "uploads"
+    PUBLISHED_DIR = BACKEND_DIR / "data" / "published"

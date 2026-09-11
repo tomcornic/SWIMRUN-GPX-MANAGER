@@ -43,6 +43,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
 
     with app.app_context():
         app.config["UPLOADS_DIR"].mkdir(parents=True, exist_ok=True)
+        app.config["PUBLISHED_DIR"].mkdir(parents=True, exist_ok=True)
         db.create_all()
 
     return app

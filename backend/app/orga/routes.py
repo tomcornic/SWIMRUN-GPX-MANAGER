@@ -7,13 +7,25 @@ from zoneinfo import ZoneInfo
 from flask import current_app, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 
+from app.core.geometry import cumulative_distances_m, project_point_onto_track
 from app.core.gpx_import import (
     CourseAssemblyResult,
     TronconImportResult,
     assemble_course,
     import_troncon_file,
 )
+from app.core.overlaps import detect_multiple_passages
 from app.core.pace import format_mmss, parse_mmss
+from app.core.publish import (
+    CoursePublic,
+    GroupePassagesPublic,
+    PassagePublic,
+    PoiPublic,
+    TronconPublic,
+    construire_course_geojson,
+    construire_meta,
+    construire_pois_json,
+)
 from app.core.tides import (
     CsvMareeInvalideError,
     PointMaree,
@@ -22,9 +34,16 @@ from app.core.tides import (
     parser_csv,
 )
 from app.extensions import db
-from app.models import Course, Event, MareeReleve, Troncon, User
+from app.models import Course, Event, MareeReleve, Poi, PoiCourse, Troncon, User
 from app.orga import bp
-from app.orga.forms import CourseForm, EventForm, LoginForm, MareeCsvForm, MareeReleveForm
+from app.orga.forms import (
+    CourseForm,
+    EventForm,
+    LoginForm,
+    MareeCsvForm,
+    MareeReleveForm,
+    PoiForm,
+)
 
 MAX_COURSES_PER_EVENT = 3
 
@@ -322,6 +341,203 @@ def course_simulation_json(course_id: int):
             "allures": allures,
             "trace": {"type": "LineString", "coordinates": coordinates},
         }
+    )
+
+
+def _track_with_distances(course: Course) -> list[tuple[float, float, float]]:
+    """Tracé assemblé (lat, lon, distance_cumulee_m) d'une course, tronçons dans l'ordre."""
+    track: list[tuple[float, float, float]] = []
+    cumul = 0.0
+    for troncon in course.troncons:
+        distances_locales = cumulative_distances_m(troncon.points)
+        for (lat, lon), d in zip(troncon.points, distances_locales):
+            track.append((lat, lon, cumul + d))
+        if distances_locales:
+            cumul += distances_locales[-1]
+    return track
+
+
+def _recalculer_distance_poi(poi: Poi, course: Course) -> float:
+    track = _track_with_distances(course)
+    if not track:
+        return 0.0
+    return project_point_onto_track((poi.lat, poi.lon), track)
+
+
+@bp.route("/poi")
+@login_required
+def poi_liste():
+    event = Event.query.first()
+    pois = event.pois if event else []
+    return render_template("orga/poi_liste.html", event=event, pois=pois)
+
+
+@bp.route("/poi/nouveau", methods=["GET", "POST"])
+@login_required
+def poi_nouveau():
+    event = Event.query.first()
+    if event is None or not event.courses:
+        flash("Configurez d'abord l'événement et au moins une course.", "error")
+        return redirect(url_for("orga.evenement"))
+
+    form = PoiForm()
+    form.courses.choices = [(c.id, c.name) for c in event.courses]
+
+    if form.validate_on_submit():
+        poi = Poi(
+            event_id=event.id,
+            type=form.type.data,
+            nom=form.nom.data,
+            description=form.description.data or "",
+            lat=form.lat.data,
+            lon=form.lon.data,
+            cote_passage=form.cote_passage.data or None,
+        )
+        db.session.add(poi)
+        db.session.flush()  # pour obtenir poi.id avant de créer les liens vers les courses
+
+        for course_id in form.courses.data:
+            course = db.session.get(Course, course_id)
+            if course is None:
+                continue
+            distance = _recalculer_distance_poi(poi, course)
+            db.session.add(PoiCourse(poi_id=poi.id, course_id=course.id, distance_m=distance))
+
+        db.session.commit()
+        flash(f"POI « {poi.nom} » créé.", "success")
+        return redirect(url_for("orga.poi_liste"))
+
+    return render_template("orga/poi_form.html", form=form, poi=None)
+
+
+@bp.route("/poi/<int:poi_id>/modifier", methods=["GET", "POST"])
+@login_required
+def poi_modifier(poi_id: int):
+    poi = db.get_or_404(Poi, poi_id)
+    event = poi.event
+    form = PoiForm(obj=poi)
+    form.courses.choices = [(c.id, c.name) for c in event.courses]
+    if request.method == "GET":
+        form.courses.data = [lien.course_id for lien in poi.course_liens]
+
+    if form.validate_on_submit():
+        poi.type = form.type.data
+        poi.nom = form.nom.data
+        poi.description = form.description.data or ""
+        poi.lat = form.lat.data
+        poi.lon = form.lon.data
+        poi.cote_passage = form.cote_passage.data or None
+
+        PoiCourse.query.filter_by(poi_id=poi.id).delete()
+        for course_id in form.courses.data:
+            course = db.session.get(Course, course_id)
+            if course is None:
+                continue
+            distance = _recalculer_distance_poi(poi, course)
+            db.session.add(PoiCourse(poi_id=poi.id, course_id=course.id, distance_m=distance))
+
+        db.session.commit()
+        flash(f"POI « {poi.nom} » mis à jour.", "success")
+        return redirect(url_for("orga.poi_liste"))
+
+    return render_template("orga/poi_form.html", form=form, poi=poi)
+
+
+@bp.route("/poi/<int:poi_id>/supprimer", methods=["POST"])
+@login_required
+def poi_supprimer(poi_id: int):
+    poi = db.get_or_404(Poi, poi_id)
+    nom = poi.nom
+    db.session.delete(poi)
+    db.session.commit()
+    flash(f"POI « {nom} » supprimé.", "success")
+    return redirect(url_for("orga.poi_liste"))
+
+
+def _generer_publication(event: Event) -> str:
+    published_dir = Path(current_app.config["PUBLISHED_DIR"])
+    published_dir.mkdir(parents=True, exist_ok=True)
+
+    courses_public = []
+    for course in event.courses:
+        if not course.troncons:
+            continue
+
+        troncons_public = [
+            TronconPublic(numero=t.number, type=t.type, longueur_m=t.length_m, points=t.points)
+            for t in course.troncons
+        ]
+
+        groupes = detect_multiple_passages(_track_with_distances(course))
+        passages_public = [
+            GroupePassagesPublic(
+                passages=[
+                    PassagePublic(debut_m=p.start_distance_m, fin_m=p.end_distance_m)
+                    for p in groupe.passages
+                ]
+            )
+            for groupe in groupes
+        ]
+
+        course_public = CoursePublic(
+            id=course.id,
+            nom=course.name,
+            couleur=course.color,
+            troncons=troncons_public,
+            passages_multiples=passages_public,
+        )
+        courses_public.append(course_public)
+
+        (published_dir / f"course-{course.id}.geojson").write_text(
+            json.dumps(construire_course_geojson(course_public))
+        )
+
+        pois_public = [
+            PoiPublic(
+                id=lien.poi.id,
+                type=lien.poi.type,
+                nom=lien.poi.nom,
+                description=lien.poi.description,
+                lat=lien.poi.lat,
+                lon=lien.poi.lon,
+                cote_passage=lien.poi.cote_passage,
+                distance_m=lien.distance_m,
+            )
+            for lien in course.poi_liens
+        ]
+        (published_dir / f"pois-{course.id}.json").write_text(
+            json.dumps(construire_pois_json(pois_public))
+        )
+
+    meta = construire_meta(event.name, event.date.isoformat(), courses_public)
+    genere_le = datetime.now(timezone.utc).isoformat()
+    meta["genere_le"] = genere_le
+    (published_dir / "meta.json").write_text(json.dumps(meta))
+    return genere_le
+
+
+@bp.route("/publier", methods=["GET", "POST"])
+@login_required
+def publier():
+    event = Event.query.first()
+    if event is None:
+        flash("Configurez d'abord l'événement.", "error")
+        return redirect(url_for("orga.evenement"))
+
+    if request.method == "POST":
+        _generer_publication(event)
+        flash("Parcours publié.", "success")
+        return redirect(url_for("orga.publier"))
+
+    meta_path = Path(current_app.config["PUBLISHED_DIR"]) / "meta.json"
+    derniere_publication = None
+    if meta_path.exists():
+        genere_le = json.loads(meta_path.read_text()).get("genere_le")
+        if genere_le:
+            derniere_publication = datetime.fromisoformat(genere_le)
+
+    return render_template(
+        "orga/publier.html", event=event, derniere_publication=derniere_publication
     )
 
 

@@ -44,6 +44,9 @@ class Event(db.Model):
     releves_maree: Mapped[list[MareeReleve]] = relationship(
         back_populates="event", cascade="all, delete-orphan", order_by="MareeReleve.moment_utc"
     )
+    pois: Mapped[list[Poi]] = relationship(
+        back_populates="event", cascade="all, delete-orphan", order_by="Poi.id"
+    )
 
 
 class Course(db.Model):
@@ -65,6 +68,9 @@ class Course(db.Model):
     event: Mapped[Event] = relationship(back_populates="courses")
     troncons: Mapped[list[Troncon]] = relationship(
         back_populates="course", cascade="all, delete-orphan", order_by="Troncon.number"
+    )
+    poi_liens: Mapped[list[PoiCourse]] = relationship(
+        back_populates="course", cascade="all, delete-orphan"
     )
 
 
@@ -104,3 +110,38 @@ class MareeReleve(db.Model):
     type: Mapped[str]  # "pm", "bm" ou "mesure"
 
     event: Mapped[Event] = relationship(back_populates="releves_maree")
+
+
+class Poi(db.Model):
+    """Point d'intérêt (§5) : ravitaillement, entrée/sortie de l'eau ou bouée directionnelle."""
+
+    __tablename__ = "pois"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id"))
+    type: Mapped[str]  # "ravitaillement", "entree_eau", "sortie_eau", "bouee"
+    nom: Mapped[str]
+    description: Mapped[str] = mapped_column(default="")
+    lat: Mapped[float]
+    lon: Mapped[float]
+    cote_passage: Mapped[str | None]  # "gauche" ou "droite", uniquement pour une bouée
+
+    event: Mapped[Event] = relationship(back_populates="pois")
+    course_liens: Mapped[list[PoiCourse]] = relationship(
+        back_populates="poi", cascade="all, delete-orphan"
+    )
+
+
+class PoiCourse(db.Model):
+    """Association POI <-> course, avec le km calculé par projection sur le tracé (§5)."""
+
+    __tablename__ = "poi_courses"
+    __table_args__ = (UniqueConstraint("poi_id", "course_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    poi_id: Mapped[int] = mapped_column(ForeignKey("pois.id"))
+    course_id: Mapped[int] = mapped_column(ForeignKey("courses.id"))
+    distance_m: Mapped[float]
+
+    poi: Mapped[Poi] = relationship(back_populates="course_liens")
+    course: Mapped[Course] = relationship(back_populates="poi_liens")
