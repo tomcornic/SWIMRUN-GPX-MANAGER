@@ -9,6 +9,10 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@turf/along": "^7.4.0",
+    "@turf/helpers": "^7.4.0",
+    "@turf/length": "^7.4.0",
+    "@turf/line-slice-along": "^7.4.0",
     "maplibre-gl": "^6.9.0",
     "pinia": "^4.0.3",
     "vue": "^3.5.42"

@@ -23,9 +23,19 @@ Contexte complet du projet : voir `prompt-claude-code-swimrun-stpabu.md` à la r
   - ✅ Auth Flask-Login + CSRF (Flask-WTF) : `/orga/login`, `/orga/logout`, toutes les routes `/orga/*` protégées par `@login_required`. Comptes créés via `flask create-user` (pas d'inscription en ligne, conforme §5).
   - ✅ Paramétrage : événement (nom, date — fuseau Europe/Paris fixe, non éditable), courses (nom, couleur, heure de départ), max 3 courses simultanées imposé côté route.
   - ✅ Écran d'import : upload multi-fichiers → aperçu (tableau statut/erreurs/avertissements, réutilise `core/gpx_import`) → validation séparée qui persiste (remplace proprement les tronçons existants de la course, voir décision ci-dessous pour le bug rencontré sur le filtrage par numéro de course).
-  - ✅ Affichage des tracés : endpoint `/orga/courses/<id>/trace.geojson`, rendu sur la carte MapLibre du dashboard (`frontend/src/orga/App.vue` + `shared/map.ts::addCourseTrack`).
+  - ✅ Affichage des tracés : endpoint `/orga/courses/<id>/trace.geojson`, rendu sur la carte MapLibre du dashboard (remplacé en P3 par un rendu plus riche, voir ci-dessous — `trace.geojson` reste utilisé tel quel).
   - ✅ 45 tests pytest verts (auth, CRUD événement/courses, flux d'import complet avec les GPX de démo de P1, y compris réimport et rejet sur erreur), `ruff check` propre.
   - ✅ Parcours complet revalidé sur un vrai serveur `flask run` (pas seulement le client de test) : login → événement → course → upload → aperçu → validation → `trace.geojson` → carte, plus vérification que les routes protégées redirigent bien sans session.
+- **P3 terminé** : allures, moteur de simulation TypeScript pur, horloge partagée, lecture/pause, rendu de la plage sur la carte, panneau d'état.
+  - ✅ Modèle `Course` étendu avec 4 allures (secondes, nullable) : `premier_allure_course_s`, `premier_allure_nage_s`, `dernier_allure_course_s`, `dernier_allure_nage_s`. Saisie en mm:ss via `core/pace.py` (parse/format), validation croisée premier < dernier dans `CourseForm.validate()`.
+  - ✅ Endpoint `/orga/courses/<id>/simulation.json` : troncons (numéro/type/longueur), allures (ou `null` si incomplètes), tracé complet — tout ce dont le moteur TS a besoin en un seul appel.
+  - ✅ `frontend/src/orga/simulation.ts` : `timeline()`, `distanceAt()`, `plageAt()`, `tronconActuel()`, `etatCoureur()`, `validerAllure()` — fonctions pures, aucune dépendance DOM/Flask.
+  - ✅ **Cas de référence du cahier des charges validé** : tronçon Run 1000 m à 5:00/km + Swim 200 m à 2:00/100 m → 1050 m exactement à t = 6 min (`simulation.test.ts`).
+  - ✅ 28 tests Vitest verts (`simulation.test.ts` + `temps.test.ts`), en plus des 59 tests pytest (7 nouveaux sur les allures/`simulation.json`).
+  - ✅ Store Pinia `horloge` (temps courant, bornes, lecture/pause, vitesse ×1 à ×120) et `courses` (charge `simulation.json` de chaque course, calcule les bornes globales `[premier départ − 15 min ; dernière arrivée + 15 min]`).
+  - ✅ `ControlesLecture.vue` (lecture/pause, vitesse, horloge HH:MM:SS, saut à une heure précise, raccourci espace) et `PanneauCourse.vue` (état, km tête/queue, tronçon en cours, étalement) par course.
+  - ✅ `carte-simulation.ts` : plage rendue en bande semi-transparente via `@turf/line-slice-along`, marqueurs tête/queue via `@turf/along`, tracés de base avec tronçons de natation en pointillé.
+  - ⚠️ **Non vérifié visuellement** : aucun outil de navigateur n'était disponible dans cette session. Le payload API, le calcul pur (Vitest) et la compilation TypeScript sont validés ; le rendu carte réel (fluidité de l'animation, alignement visuel de la plage) reste à confirmer à l'œil par l'utilisateur.
 
 ## Décisions techniques et justification
 
@@ -44,7 +54,11 @@ Contexte complet du projet : voir `prompt-claude-code-swimrun-stpabu.md` à la r
   - Seuils par défaut : `SWIM_LENGTH_WARNING_THRESHOLD_M = 1500` et le seuil `min_segment_length_m = 30` ne sont pas spécifiés numériquement dans le cahier des charges au-delà de « anormalement long » / « ~30 m » — choisis raisonnablement, à ajuster avec de vrais tracés.
 - **Le numéro de course dans le nom de fichier GPX (`Course{N}_...`) n'a jamais besoin de correspondre à l'identifiant interne de la course en base.** L'import est scopé par course dès l'upload (dossier `data/uploads/course_<id>/`) : le numéro extrait du nom de fichier ne sert qu'à documenter l'origine du fichier côté organisateur. `backend/app/orga/routes.py::_run_import_preview` force `result.course = course_id` sur chaque résultat avant d'appeler `core.gpx_import.assemble_course`, y compris pour les fichiers dont le nom est totalement invalide (`result.course` vaudrait `None` sinon). Sans ce fix, un fichier au nom invalide était silencieusement exclu du contrôle d'assemblage au lieu de bloquer l'import (bogue trouvé via les tests, pas juste en relisant le code).
 - **Import en deux temps (aperçu puis validation) sans re-upload** : les fichiers sont écrits sur disque dans `data/uploads/course_<id>/` dès le premier POST, et la validation relit ce même dossier plutôt que d'exiger un nouvel envoi — évite de devoir faire transiter les fichiers via la session ou une API JSON. Répond directement à l'exigence « écran de prévisualisation avant validation » du §4.
-- **CRUD événement/courses en Jinja server-rendered classique** (pas de SPA/API JSON) : seule la carte a vraiment besoin de JS/Vue. Les formulaires standards restent plus simples à tester (`curl`) et suffisent largement pour un usage petite équipe. Le dashboard (`orga/index.html`) embarque juste la liste des courses en JSON dans un `<script type="application/json">` pour que le front sache quels `trace.geojson` aller chercher.
+- **CRUD événement/courses en Jinja server-rendered classique** (pas de SPA/API JSON) : seule la carte a vraiment besoin de JS/Vue. Les formulaires standards restent plus simples à tester (`curl`) et suffisent largement pour un usage petite équipe. Le dashboard (`orga/index.html`) embarque juste la liste des courses en JSON dans un `<script type="application/json">` pour que le front sache quels `trace.geojson`/`simulation.json` aller chercher.
+- **Vocabulaire du domaine gardé en français dans le code** (tronçon, allure, plage, orga...), contrairement à la règle 6 du cahier des charges (« code en anglais ») prise au pied de la lettre. **Décision explicite de l'utilisateur** après que l'écart a été signalé : le vocabulaire métier reste français partout (comme dans le cahier des charges lui-même), seuls les termes génériques (get/create/list, structure du code) sont en anglais. S'applique à tout le code déjà écrit (P0-P2, non modifié) et à tout le code à venir.
+- **`étalement` du peloton (panneau d'état, §5)** : le cahier des charges demande un étalement « en mètres et en minutes » sans formule. Implémenté comme : mètres = distance tête − distance queue ; minutes = ce même écart en mètres divisé par l'allure *du dernier coureur sur son tronçon courant*. C'est une approximation raisonnable (pas une mesure physique exacte, puisque premier et dernier n'ont pas la même allure), à ajuster si l'utilisateur préfère une autre définition une fois testé en vrai.
+- **Boucle d'animation `requestAnimationFrame` tourne en continu**, indépendamment de l'état lecture/pause (`horloge.avancer()` ne fait rien si `enLecture` est faux, mais `mettreAJourCarte()` s'exécute quand même à chaque frame). Volontaire : permet à la carte de refléter immédiatement un déplacement manuel du curseur ou un saut d'heure, même à l'arrêt, sans logique de dirty-checking séparée. Le coût (quelques appels Turf par course et par frame) est négligeable pour 3 courses.
+- **`verbatimModuleSyntax` de TypeScript** (activé via `@vue/tsconfig`) exige `import type { ... }` pour tout ce qui n'est que des types (ex. `CircleLayerSpecification`, `LineLayerSpecification` de maplibre-gl) — sinon `vue-tsc -b` échoue avec `TS1484`. Séparer systématiquement les imports de valeurs et de types quand une bibliothèque mélange les deux dans le même module.
 
 ## Pièges rencontrés
 
@@ -75,13 +89,13 @@ cd frontend
 npm install
 npm run build     # génère backend/app/static/dist/ (manifest inclus)
 npm run dev        # serveur Vite avec proxy /api -> Flask (nécessite VITE_DEV_SERVER=1 côté Flask, pas encore branché de bout en bout)
+npm run test       # Vitest (simulation.ts, temps.ts)
 ```
 
-## Prochaines étapes (P3)
+## Prochaines étapes (P4)
 
-- Modèle de calcul TypeScript (fonctions pures, testées Vitest) : `timeline(course, profil)`, `distanceAt(course, profil, t)`, calcul de la « plage » entre premier et dernier coureur.
-- Allures par course (saisie manuelle, validation premier < dernier sur chaque discipline) — pas encore dans le modèle `Course` (P2 n'a que nom/couleur/heure de départ), à ajouter.
-- Horloge de simulation (store Pinia partagé), lecture/pause, vitesses ×1 à ×120, barre de défilement.
-- Rendu de la plage sur la carte (bande épaisse semi-transparente, `lineSliceAlong`), marqueurs tête/queue de peloton, panneau latéral par course.
-- Cas de test de référence à valider : tronçon Run 1000 m à 5:00/km puis Swim 200 m à 2:00/100 m → position à 1050 m après 6 min.
-- Plus tard : premier déploiement réel sur PythonAnywhere (compte à créer/fournir côté utilisateur), et intégration du logo/captures dans `docs/brand/` pour extraire une vraie palette (actuellement palette provisoire, pas encore posée).
+- Module Marée : saisie des données (tableau PM/BM ou import CSV, sélecteur de fuseau de la source), interpolation en cosinus dans `core/tides.py` (tests pytest), série échantillonnée toutes les 5 min fournie au front.
+- Graphique 2D (Chart.js + chartjs-plugin-annotation — pas encore installé) avec curseur vertical synchronisé sur le store Pinia `horloge` existant (P3) : c'est déjà « la source de vérité pour la carte et le graphique de marée » comme prévu au cahier des charges, donc pas de nouveau store à créer, juste à brancher un composant graphique dessus.
+- Clic sur le graphique déplace l'horloge de simulation (`horloge.definirTemps()`, déjà l'action utilisée par le slider et le saut à une heure — réutilisable telle quelle).
+- Affichage de la hauteur d'eau courante et de la tendance (montante/descendante).
+- Plus tard : premier déploiement réel sur PythonAnywhere (compte à créer/fournir côté utilisateur), intégration du logo/captures dans `docs/brand/` pour extraire une vraie palette (actuellement palette provisoire), et validation visuelle en navigateur de tout ce qui a été construit sans outil de navigateur disponible (P3 notamment).

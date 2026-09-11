@@ -11,12 +11,33 @@ from app.core.gpx_import import (
     assemble_course,
     import_troncon_file,
 )
+from app.core.pace import format_mmss, parse_mmss
 from app.extensions import db
 from app.models import Course, Event, Troncon, User
 from app.orga import bp
 from app.orga.forms import CourseForm, EventForm, LoginForm
 
 MAX_COURSES_PER_EVENT = 3
+
+PACE_FIELDS = (
+    ("premier_allure_course", "premier_allure_course_s"),
+    ("premier_allure_nage", "premier_allure_nage_s"),
+    ("dernier_allure_course", "dernier_allure_course_s"),
+    ("dernier_allure_nage", "dernier_allure_nage_s"),
+)
+
+
+def _fill_pace_fields(form: CourseForm, course: Course) -> None:
+    for form_field_name, model_field_name in PACE_FIELDS:
+        seconds = getattr(course, model_field_name)
+        if seconds is not None:
+            getattr(form, form_field_name).data = format_mmss(seconds)
+
+
+def _save_pace_fields(course: Course, form: CourseForm) -> None:
+    for form_field_name, model_field_name in PACE_FIELDS:
+        value = getattr(form, form_field_name).data
+        setattr(course, model_field_name, parse_mmss(value) if value else None)
 
 
 @bp.route("/login", methods=["GET", "POST"])
@@ -101,6 +122,7 @@ def course_nouvelle():
             color=form.color.data,
             start_time=form.start_time.data,
         )
+        _save_pace_fields(course, form)
         db.session.add(course)
         db.session.commit()
         flash(f"Course « {course.name} » créée.", "success")
@@ -114,10 +136,13 @@ def course_nouvelle():
 def course_modifier(course_id: int):
     course = db.get_or_404(Course, course_id)
     form = CourseForm(obj=course)
+    if request.method == "GET":
+        _fill_pace_fields(form, course)
     if form.validate_on_submit():
         course.name = form.name.data
         course.color = form.color.data
         course.start_time = form.start_time.data
+        _save_pace_fields(course, form)
         db.session.commit()
         flash(f"Course « {course.name} » mise à jour.", "success")
         return redirect(url_for("orga.courses_liste"))
@@ -249,5 +274,43 @@ def course_trace_geojson(course_id: int):
             "type": "Feature",
             "properties": {"course_id": course.id, "name": course.name, "color": course.color},
             "geometry": {"type": "LineString", "coordinates": coordinates},
+        }
+    )
+
+
+@bp.route("/courses/<int:course_id>/simulation.json")
+@login_required
+def course_simulation_json(course_id: int):
+    course = db.get_or_404(Course, course_id)
+
+    coordinates: list[list[float]] = []
+    for troncon in course.troncons:
+        coordinates.extend([lon, lat] for lat, lon in troncon.points)
+
+    allures = None
+    paces = (
+        course.premier_allure_course_s,
+        course.premier_allure_nage_s,
+        course.dernier_allure_course_s,
+        course.dernier_allure_nage_s,
+    )
+    if all(p is not None for p in paces):
+        allures = {
+            "premier": {"course_s_par_km": paces[0], "nage_s_par_100m": paces[1]},
+            "dernier": {"course_s_par_km": paces[2], "nage_s_par_100m": paces[3]},
+        }
+
+    return jsonify(
+        {
+            "id": course.id,
+            "nom": course.name,
+            "couleur": course.color,
+            "heure_depart": course.start_time.isoformat(),
+            "troncons": [
+                {"numero": t.number, "type": t.type, "longueur_m": t.length_m}
+                for t in course.troncons
+            ],
+            "allures": allures,
+            "trace": {"type": "LineString", "coordinates": coordinates},
         }
     )

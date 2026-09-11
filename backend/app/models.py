@@ -52,6 +52,13 @@ class Course(db.Model):
     color: Mapped[str] = mapped_column(default="#1d4ed8")
     start_time: Mapped[dt.time]
 
+    # Allures (§5) : premier/dernier coureur, en secondes par km (course) et par 100 m (nage).
+    # Nullable : une course peut exister sans allure encore saisie (pas de simulation possible).
+    premier_allure_course_s: Mapped[int | None]
+    premier_allure_nage_s: Mapped[int | None]
+    dernier_allure_course_s: Mapped[int | None]
+    dernier_allure_nage_s: Mapped[int | None]
+
     event: Mapped[Event] = relationship(back_populates="courses")
     troncons: Mapped[list[Troncon]] = relationship(
         back_populates="course", cascade="all, delete-orphan", order_by="Troncon.number"

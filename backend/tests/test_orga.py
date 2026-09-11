@@ -84,3 +84,64 @@ def test_course_rejects_invalid_color(logged_in_client):
     _create_event(logged_in_client)
     response = _create_course(logged_in_client, color="not-a-color")
     assert "hexadécimale".encode() in response.data
+
+
+def _create_course_with_paces(client, **paces):
+    _create_event(client)
+    data = {"name": "Course XS", "color": "#1d4ed8", "start_time": "09:00", **paces}
+    return client.post("/orga/courses/nouvelle", data=data, follow_redirects=True)
+
+
+def test_course_accepts_valid_paces(logged_in_client, app):
+    response = _create_course_with_paces(
+        logged_in_client,
+        premier_allure_course="5:00",
+        premier_allure_nage="2:00",
+        dernier_allure_course="7:00",
+        dernier_allure_nage="3:00",
+    )
+    assert response.status_code == 200
+    with app.app_context():
+        course = Course.query.first()
+        assert course.premier_allure_course_s == 300
+        assert course.premier_allure_nage_s == 120
+        assert course.dernier_allure_course_s == 420
+        assert course.dernier_allure_nage_s == 180
+
+
+def test_course_rejects_premier_slower_than_dernier(logged_in_client, app):
+    response = _create_course_with_paces(
+        logged_in_client,
+        premier_allure_course="7:00",
+        premier_allure_nage="2:00",
+        dernier_allure_course="5:00",
+        dernier_allure_nage="3:00",
+    )
+    assert b"plus rapide" in response.data
+    with app.app_context():
+        assert Course.query.count() == 0
+
+
+def test_course_allows_paces_left_empty(logged_in_client, app):
+    response = _create_course_with_paces(logged_in_client)
+    assert response.status_code == 200
+    with app.app_context():
+        course = Course.query.first()
+        assert course is not None
+        assert course.premier_allure_course_s is None
+
+
+def test_edit_course_prefills_paces(logged_in_client, app):
+    _create_course_with_paces(
+        logged_in_client,
+        premier_allure_course="5:00",
+        premier_allure_nage="2:00",
+        dernier_allure_course="7:00",
+        dernier_allure_nage="3:00",
+    )
+    with app.app_context():
+        course_id = Course.query.first().id
+
+    response = logged_in_client.get(f"/orga/courses/{course_id}/modifier")
+    assert b'value="5:00"' in response.data
+    assert b'value="3:00"' in response.data

@@ -1,12 +1,5 @@
 import { AttributionControl, Map as MaplibreMap, NavigationControl } from "maplibre-gl";
-import type { GeoJSONSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-
-export interface TrackFeature {
-  type: "Feature";
-  properties: Record<string, unknown>;
-  geometry: { type: "LineString"; coordinates: [number, number][] };
-}
 
 const IGN_ORTHO_TILES_URL =
   "https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0" +
@@ -47,22 +40,4 @@ export function createSatelliteMap(container: HTMLElement): MaplibreMap {
   map.addControl(new AttributionControl({ compact: true }), "bottom-right");
 
   return map;
-}
-
-export function addCourseTrack(map: MaplibreMap, courseId: number, track: TrackFeature, color: string): void {
-  const sourceId = `course-${courseId}`;
-  const existingSource = map.getSource(sourceId) as GeoJSONSource | undefined;
-  if (existingSource) {
-    existingSource.setData(track);
-    return;
-  }
-
-  map.addSource(sourceId, { type: "geojson", data: track });
-  map.addLayer({
-    id: `${sourceId}-line`,
-    type: "line",
-    source: sourceId,
-    layout: { "line-join": "round", "line-cap": "round" },
-    paint: { "line-color": color, "line-width": 4, "line-opacity": 0.85 },
-  });
 }
