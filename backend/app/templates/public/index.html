@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% set asset = vite_asset('public') %}
+
+{% block title %}Parcours — Swimrun de Saint-Pabu{% endblock %}
+
+{% block head %}
+  {% for href in asset.css_hrefs %}
+  <link rel="stylesheet" href="{{ href }}">
+  {% endfor %}
+{% endblock %}
+
+{% block body %}
+  <div id="app"></div>
+  {% if asset.dev %}
+  <script type="module" src="{{ asset.client_src }}"></script>
+  {% endif %}
+  <script type="module" src="{{ asset.script_src }}"></script>
+{% endblock %}

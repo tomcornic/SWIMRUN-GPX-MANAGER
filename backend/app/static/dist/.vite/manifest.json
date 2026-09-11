@@ -1,0 +1,31 @@
+{
+  "_map-BsiEVyeR.css": {
+    "file": "assets/map-BsiEVyeR.css",
+    "src": "_map-BsiEVyeR.css"
+  },
+  "_map-e4cF_apK.js": {
+    "file": "assets/map-e4cF_apK.js",
+    "name": "map",
+    "css": [
+      "assets/map-BsiEVyeR.css"
+    ]
+  },
+  "src/orga/main.ts": {
+    "file": "assets/orga-CUHOLl0V.js",
+    "name": "orga",
+    "src": "src/orga/main.ts",
+    "isEntry": true,
+    "imports": [
+      "_map-e4cF_apK.js"
+    ]
+  },
+  "src/public/main.ts": {
+    "file": "assets/public-CUHOLl0V.js",
+    "name": "public",
+    "src": "src/public/main.ts",
+    "isEntry": true,
+    "imports": [
+      "_map-e4cF_apK.js"
+    ]
+  }
+}

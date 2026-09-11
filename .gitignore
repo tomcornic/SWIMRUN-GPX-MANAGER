@@ -1,0 +1,20 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+backend/instance/
+*.db
+
+# Node
+node_modules/
+*.tsbuildinfo
+
+# Données et secrets
+backend/data/uploads/*
+!backend/data/uploads/.gitkeep
+backend/data/published/*
+!backend/data/published/.gitkeep
+.env
+
+# Éditeurs / OS
+.DS_Store

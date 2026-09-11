@@ -1,0 +1,1 @@
+import{a as e,c as t,i as n,n as r,o as i,r as a,s as o,t as s}from"./map-e4cF_apK.js";a(e({__name:`App`,setup(e){let r=t(`mapContainer`);return i(()=>{r.value&&s(r.value)}),(e,t)=>(o(),n(`div`,{ref_key:`mapContainer`,ref:r,class:`map-container`},null,512))}})).use(r()).mount(`#app`);
