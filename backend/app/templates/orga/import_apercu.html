@@ -1,0 +1,54 @@
+{% extends "orga/_layout.html" %}
+
+{% block title %}Aperçu de l'import — {{ course.name }}{% endblock %}
+
+{% block orga_content %}
+<h1>Aperçu de l'import — {{ course.name }}</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>Fichier</th><th>Tronçon</th><th>Type</th><th>Longueur</th><th>Points</th><th>Statut</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for result in troncon_results %}
+    <tr>
+      <td>{{ result.filename }}</td>
+      <td>{{ result.troncon if result.troncon is not none else "—" }}</td>
+      <td>{{ result.type or "—" }}</td>
+      <td>{{ "%.0f m" | format(result.length_m) if result.length_m else "—" }}</td>
+      <td>{{ result.points | length }}</td>
+      <td class="status-{{ result.status }}">
+        {{ result.status }}
+        {% if result.messages %}<br>{{ result.messages | join(" ") }}{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if assembly.messages %}
+<h2>Contrôles sur l'ensemble de la course</h2>
+<ul>
+  {% for message in assembly.messages %}<li class="status-{{ assembly.status }}">{{ message }}</li>{% endfor %}
+</ul>
+{% endif %}
+
+<p>
+  Statut global : <strong class="status-{{ assembly.status }}">{{ assembly.status }}</strong>
+  &middot; tracé assemblé : {{ assembly.track | length }} points,
+  {{ "%.0f m" | format(assembly.track[-1].distance_m) if assembly.track else "0 m" }} au total.
+</p>
+
+{% if assembly.status != "erreur" %}
+<form method="post" action="{{ url_for('orga.course_import_valider', course_id=course.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button class="btn" type="submit">Valider l'import</button>
+</form>
+{% else %}
+<p><em>Corrigez les erreurs ci-dessus puis réimportez.</em></p>
+{% endif %}
+
+<p><a href="{{ url_for('orga.course_import', course_id=course.id) }}">&larr; Réimporter</a></p>
+{% endblock %}

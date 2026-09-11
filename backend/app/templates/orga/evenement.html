@@ -1,0 +1,22 @@
+{% extends "orga/_layout.html" %}
+
+{% block title %}Événement — Swimrun de Saint-Pabu{% endblock %}
+
+{% block orga_content %}
+<h1>Événement</h1>
+<form method="post" novalidate>
+  {{ form.hidden_tag() }}
+  <div class="field">
+    {{ form.name.label }}
+    {{ form.name() }}
+    {% for error in form.name.errors %}<div class="errors">{{ error }}</div>{% endfor %}
+  </div>
+  <div class="field">
+    {{ form.date.label }}
+    {{ form.date() }}
+    {% for error in form.date.errors %}<div class="errors">{{ error }}</div>{% endfor %}
+  </div>
+  <p><em>Fuseau horaire : Europe/Paris (fixe, voir §1 du cahier des charges).</em></p>
+  <button class="btn" type="submit">Enregistrer</button>
+</form>
+{% endblock %}

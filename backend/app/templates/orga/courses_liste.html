@@ -1,0 +1,45 @@
+{% extends "orga/_layout.html" %}
+
+{% block title %}Courses — Swimrun de Saint-Pabu{% endblock %}
+
+{% block orga_content %}
+<h1>Courses</h1>
+
+{% if not event %}
+  <p>Configurez d'abord l'<a href="{{ url_for('orga.evenement') }}">événement</a>.</p>
+{% else %}
+  <table>
+    <thead>
+      <tr><th>Course</th><th>Heure de départ</th><th>Tronçons</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for course in courses %}
+      <tr>
+        <td><span class="course-color" style="background:{{ course.color }}"></span>{{ course.name }}</td>
+        <td>{{ course.start_time.strftime("%H:%M") }}</td>
+        <td>{{ course.troncons | length }}</td>
+        <td>
+          <a href="{{ url_for('orga.course_modifier', course_id=course.id) }}">Modifier</a>
+          &middot;
+          <a href="{{ url_for('orga.course_import', course_id=course.id) }}">Importer des GPX</a>
+          &middot;
+          <form method="post" action="{{ url_for('orga.course_supprimer', course_id=course.id) }}"
+                style="display:inline" onsubmit="return confirm('Supprimer cette course ?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" style="border:none;background:none;color:#b91c1c;cursor:pointer;font:inherit;">Supprimer</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4">Aucune course pour l'instant.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if courses | length < max_courses %}
+    <p><a class="btn" href="{{ url_for('orga.course_nouvelle') }}">Nouvelle course</a></p>
+  {% else %}
+    <p><em>Maximum {{ max_courses }} courses simultanées atteint.</em></p>
+  {% endif %}
+{% endif %}
+{% endblock %}

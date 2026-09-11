@@ -1,0 +1,1 @@
+import{a as e,c as t,i as n,l as r,n as i,o as a,r as o,s}from"./map-DJ5ky2H4.js";n(a({__name:`App`,setup(n){let a=r(`mapContainer`);return s(()=>{a.value&&i(a.value)}),(n,r)=>(t(),e(`div`,{ref_key:`mapContainer`,ref:a,class:`map-container`},null,512))}})).use(o()).mount(`#app`);

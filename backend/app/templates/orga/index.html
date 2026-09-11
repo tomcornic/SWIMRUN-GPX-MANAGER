@@ -1,18 +1,30 @@
-{% extends "base.html" %}
+{% extends "orga/_layout.html" %}
 {% set asset = vite_asset('orga') %}
 
 {% block title %}Simulateur — Swimrun de Saint-Pabu{% endblock %}
 
-{% block head %}
+{% block orga_head %}
   {% for href in asset.css_hrefs %}
   <link rel="stylesheet" href="{{ href }}">
   {% endfor %}
+  <style>
+    .orga-dashboard { display: flex; flex-direction: column; height: calc(100vh - 3rem); }
+    #app { flex: 1; min-height: 0; }
+  </style>
 {% endblock %}
 
-{% block body %}
-  <div id="app"></div>
-  {% if asset.dev %}
-  <script type="module" src="{{ asset.client_src }}"></script>
+{% block orga_content %}
+<div class="orga-dashboard">
+  {% if not event %}
+    <p>Bienvenue. Commencez par configurer l'<a href="{{ url_for('orga.evenement') }}">événement</a>.</p>
+  {% elif not courses %}
+    <p>Aucune course pour l'instant. <a href="{{ url_for('orga.courses_liste') }}">Créez-en une</a>.</p>
   {% endif %}
-  <script type="module" src="{{ asset.script_src }}"></script>
+  <div id="app"></div>
+</div>
+<script id="orga-courses" type="application/json">{{ courses_json | safe }}</script>
+{% if asset.dev %}
+<script type="module" src="{{ asset.client_src }}"></script>
+{% endif %}
+<script type="module" src="{{ asset.script_src }}"></script>
 {% endblock %}

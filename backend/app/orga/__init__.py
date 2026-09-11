@@ -1,8 +1,5 @@
-from flask import Blueprint, render_template
+from flask import Blueprint
 
 bp = Blueprint("orga", __name__, url_prefix="/orga")
 
-
-@bp.route("/")
-def index():
-    return render_template("orga/index.html")
+from app.orga import routes  # noqa: E402,F401

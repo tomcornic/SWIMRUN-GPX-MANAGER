@@ -1,0 +1,26 @@
+{% extends "orga/_layout.html" %}
+
+{% block title %}{{ "Modifier" if course else "Nouvelle" }} course — Swimrun de Saint-Pabu{% endblock %}
+
+{% block orga_content %}
+<h1>{{ "Modifier la course" if course else "Nouvelle course" }}</h1>
+<form method="post" novalidate>
+  {{ form.hidden_tag() }}
+  <div class="field">
+    {{ form.name.label }}
+    {{ form.name() }}
+    {% for error in form.name.errors %}<div class="errors">{{ error }}</div>{% endfor %}
+  </div>
+  <div class="field">
+    {{ form.color.label }}
+    {{ form.color(type="color") }}
+    {% for error in form.color.errors %}<div class="errors">{{ error }}</div>{% endfor %}
+  </div>
+  <div class="field">
+    {{ form.start_time.label }}
+    {{ form.start_time() }}
+    {% for error in form.start_time.errors %}<div class="errors">{{ error }}</div>{% endfor %}
+  </div>
+  <button class="btn" type="submit">Enregistrer</button>
+</form>
+{% endblock %}

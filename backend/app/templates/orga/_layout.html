@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+  :root { font-family: system-ui, sans-serif; }
+  body { margin: 0; color: #1a1a1a; }
+  nav.orga-nav { display: flex; gap: 1rem; align-items: center; padding: 0.75rem 1.25rem; background: #0f172a; color: white; }
+  nav.orga-nav a { color: white; text-decoration: none; font-size: 0.95rem; }
+  nav.orga-nav a:hover { text-decoration: underline; }
+  nav.orga-nav form { margin-left: auto; }
+  nav.orga-nav button { background: none; border: none; color: white; cursor: pointer; font: inherit; }
+  main.orga-main { padding: 1.25rem; max-width: 960px; margin: 0 auto; }
+  .flash { padding: 0.6rem 1rem; border-radius: 4px; margin-bottom: 1rem; }
+  .flash-success { background: #dcfce7; color: #166534; }
+  .flash-error { background: #fee2e2; color: #991b1b; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #e2e8f0; }
+  .status-ok { color: #166534; }
+  .status-avertissement { color: #92400e; }
+  .status-erreur { color: #991b1b; font-weight: 600; }
+  .btn { display: inline-block; padding: 0.5rem 1rem; background: #1d4ed8; color: white;
+         border: none; border-radius: 4px; text-decoration: none; cursor: pointer; font: inherit; }
+  .btn-danger { background: #b91c1c; }
+  label { display: block; margin-bottom: 0.25rem; font-weight: 600; }
+  .field { margin-bottom: 1rem; }
+  input[type=text], input[type=email], input[type=password],
+  input[type=date], input[type=time], input[type=color], input[type=file] {
+    padding: 0.4rem; width: 100%; max-width: 320px; box-sizing: border-box;
+  }
+  .errors { color: #991b1b; font-size: 0.85rem; }
+  .course-color { display: inline-block; width: 0.9rem; height: 0.9rem; border-radius: 50%;
+                  margin-right: 0.4rem; vertical-align: middle; }
+</style>
+{% block orga_head %}{% endblock %}
+{% endblock %}
+
+{% block body %}
+<nav class="orga-nav">
+  <a href="{{ url_for('orga.index') }}">Accueil</a>
+  <a href="{{ url_for('orga.evenement') }}">Événement</a>
+  <a href="{{ url_for('orga.courses_liste') }}">Courses</a>
+  <form method="post" action="{{ url_for('orga.logout') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit">Déconnexion</button>
+  </form>
+</nav>
+<main class="orga-main">
+  {% for category, message in get_flashed_messages(with_categories=true) %}
+    <div class="flash flash-{{ category }}">{{ message }}</div>
+  {% endfor %}
+  {% block orga_content %}{% endblock %}
+</main>
+{% endblock %}

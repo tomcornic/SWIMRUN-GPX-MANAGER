@@ -1,0 +1,20 @@
+{% extends "orga/_layout.html" %}
+
+{% block title %}Import GPX — {{ course.name }}{% endblock %}
+
+{% block orga_content %}
+<h1>Importer des GPX — {{ course.name }}</h1>
+<p>
+  Nom de fichier attendu : <code>Course{{ "{N}" }}_Tronçon{{ "{M}" }}_{{ "{Run|Swim}" }}.gpx</code>
+  (le numéro de course dans le nom de fichier n'a pas besoin de correspondre à l'identifiant
+  interne — seul le numéro de tronçon compte ici).
+</p>
+<form method="post" enctype="multipart/form-data">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="field">
+    <label for="fichiers">Fichiers GPX</label>
+    <input type="file" id="fichiers" name="fichiers" accept=".gpx" multiple required>
+  </div>
+  <button class="btn" type="submit">Aperçu de l'import</button>
+</form>
+{% endblock %}
