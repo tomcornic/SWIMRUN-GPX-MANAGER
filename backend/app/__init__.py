@@ -1,9 +1,18 @@
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
+
 from flask import Flask
 
 from app.cli import register_cli
 from app.config import Config
 from app.extensions import csrf, db, login_manager
 from app.vite import register_vite
+
+
+def _heure_locale(moment_utc: datetime) -> str:
+    if moment_utc.tzinfo is None:
+        moment_utc = moment_utc.replace(tzinfo=timezone.utc)
+    return moment_utc.astimezone(ZoneInfo("Europe/Paris")).strftime("%d/%m/%Y %H:%M")
 
 
 def create_app(config_class: type[Config] = Config) -> Flask:
@@ -15,6 +24,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     login_manager.init_app(app)
     login_manager.login_view = "orga.login"
     login_manager.login_message = "Merci de vous connecter pour accéder à cette page."
+    app.jinja_env.filters["heure_locale"] = _heure_locale
 
     register_vite(app)
     register_cli(app)

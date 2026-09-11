@@ -5,14 +5,17 @@ import { computed, onMounted, onUnmounted, useTemplateRef } from "vue";
 import { createSatelliteMap } from "../shared/map";
 import { afficherMarqueurs, afficherPlage, afficherTraceDistincte } from "./carte-simulation";
 import ControlesLecture from "./components/ControlesLecture.vue";
+import GraphiqueMaree from "./components/GraphiqueMaree.vue";
 import PanneauCourse from "./components/PanneauCourse.vue";
 import { plageAt } from "./simulation";
 import { useCoursesStore } from "./stores/courses";
 import { useHorlogeStore } from "./stores/horloge";
+import { useMareeStore } from "./stores/maree";
 
 const mapContainer = useTemplateRef<HTMLDivElement>("mapContainer");
 const coursesStore = useCoursesStore();
 const horloge = useHorlogeStore();
+const mareeStore = useMareeStore();
 
 const coursesAvecAllure = computed(() => coursesStore.courses.filter((c) => c.allure !== null));
 
@@ -61,6 +64,7 @@ onMounted(async () => {
 
   const bornes = coursesStore.bornesHorloge;
   horloge.initialiserBornes(bornes.debutS, bornes.finS);
+  await mareeStore.charger(bornes.debutS, bornes.finS);
 
   carte.on("load", () => {
     for (const course of coursesStore.courses) {
@@ -90,6 +94,7 @@ onUnmounted(() => {
         />
       </aside>
     </div>
+    <GraphiqueMaree v-if="coursesAvecAllure.length && mareeStore.serie.length" />
     <ControlesLecture v-if="coursesAvecAllure.length" />
     <p v-else class="aucune-simulation">
       Aucune course avec des allures configurées : ouvrez « Courses » pour les saisir.

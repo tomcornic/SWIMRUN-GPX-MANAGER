@@ -1,0 +1,59 @@
+{% extends "orga/_layout.html" %}
+
+{% block title %}Marée — Swimrun de Saint-Pabu{% endblock %}
+
+{% block orga_content %}
+<h1>Marée</h1>
+
+{% if not event %}
+  <p>Configurez d'abord l'<a href="{{ url_for('orga.evenement') }}">événement</a>.</p>
+{% else %}
+  <table>
+    <thead>
+      <tr><th>Date / heure (Europe/Paris)</th><th>Hauteur</th><th>Type</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for releve in releves %}
+      <tr>
+        <td>{{ releve.moment_utc | heure_locale }}</td>
+        <td>{{ "%.2f m" | format(releve.hauteur_m) }}</td>
+        <td>{{ {"pm": "Pleine mer", "bm": "Basse mer", "mesure": "Mesure"}[releve.type] }}</td>
+        <td>
+          <form method="post" action="{{ url_for('orga.maree_supprimer', releve_id=releve.id) }}"
+                onsubmit="return confirm('Supprimer ce point ?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" style="border:none;background:none;color:#b91c1c;cursor:pointer;font:inherit;">Supprimer</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4">Aucun point de marée pour l'instant.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Option A — Ajouter un extrême (pleine ou basse mer)</h2>
+  <p><em>À recopier depuis les tables SHOM du port choisi. Pensez aux extrêmes de la veille
+    et du lendemain pour couvrir les bords de la plage horaire simulée.</em></p>
+  <form method="post" action="{{ url_for('orga.maree_ajouter') }}" novalidate>
+    {{ releve_form.hidden_tag() }}
+    <div class="field">{{ releve_form.date.label }} {{ releve_form.date() }}</div>
+    <div class="field">{{ releve_form.heure.label }} {{ releve_form.heure() }}</div>
+    <div class="field">{{ releve_form.hauteur_m.label }} {{ releve_form.hauteur_m() }}</div>
+    <div class="field">{{ releve_form.type.label }} {{ releve_form.type() }}</div>
+    <div class="field">{{ releve_form.fuseau_source.label }} {{ releve_form.fuseau_source() }}</div>
+    <button class="btn" type="submit">Ajouter</button>
+  </form>
+
+  <h2>Option B — Importer un CSV de mesures</h2>
+  <p><em>Format : une ligne par mesure, <code>datetime;hauteur_m</code>
+    (ex. <code>2027-07-12 09:00;3.5</code>). Remplace les mesures CSV précédemment
+    importées (les extrêmes saisis en Option A ne sont pas touchés).</em></p>
+  <form method="post" action="{{ url_for('orga.maree_importer_csv') }}" enctype="multipart/form-data" novalidate>
+    {{ csv_form.hidden_tag() }}
+    <div class="field">{{ csv_form.fichier.label }} {{ csv_form.fichier() }}</div>
+    <div class="field">{{ csv_form.fuseau_source.label }} {{ csv_form.fuseau_source() }}</div>
+    <button class="btn" type="submit">Importer</button>
+  </form>
+{% endif %}
+{% endblock %}

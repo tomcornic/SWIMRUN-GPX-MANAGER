@@ -1,5 +1,14 @@
 from flask_wtf import FlaskForm
-from wtforms import DateField, EmailField, PasswordField, StringField, TimeField
+from flask_wtf.file import FileAllowed, FileField, FileRequired
+from wtforms import (
+    DateField,
+    EmailField,
+    FloatField,
+    PasswordField,
+    SelectField,
+    StringField,
+    TimeField,
+)
 from wtforms.validators import DataRequired, Length, Optional, Regexp
 
 from app.core.pace import parse_mmss
@@ -62,3 +71,26 @@ class CourseForm(FlaskForm):
                 valid = False
 
         return valid
+
+
+FUSEAU_CHOICES = [
+    ("utc", "UTC"),
+    ("utc+1", "UTC+1 (fixe, sans heure d'été)"),
+    ("legale", "Heure légale française (Europe/Paris)"),
+]
+
+
+class MareeReleveForm(FlaskForm):
+    date = DateField("Date", validators=[DataRequired()])
+    heure = TimeField("Heure", validators=[DataRequired()])
+    hauteur_m = FloatField("Hauteur (m)", validators=[DataRequired()])
+    type = SelectField("Type", choices=[("pm", "Pleine mer"), ("bm", "Basse mer")])
+    fuseau_source = SelectField("Fuseau de la table source", choices=FUSEAU_CHOICES)
+
+
+class MareeCsvForm(FlaskForm):
+    fichier = FileField(
+        "Fichier CSV (datetime;hauteur_m)",
+        validators=[FileRequired(), FileAllowed(["csv"], "Fichier .csv attendu.")],
+    )
+    fuseau_source = SelectField("Fuseau de la table source", choices=FUSEAU_CHOICES)

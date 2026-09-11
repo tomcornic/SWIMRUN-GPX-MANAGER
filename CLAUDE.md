@@ -36,6 +36,15 @@ Contexte complet du projet : voir `prompt-claude-code-swimrun-stpabu.md` à la r
   - ✅ `ControlesLecture.vue` (lecture/pause, vitesse, horloge HH:MM:SS, saut à une heure précise, raccourci espace) et `PanneauCourse.vue` (état, km tête/queue, tronçon en cours, étalement) par course.
   - ✅ `carte-simulation.ts` : plage rendue en bande semi-transparente via `@turf/line-slice-along`, marqueurs tête/queue via `@turf/along`, tracés de base avec tronçons de natation en pointillé.
   - ⚠️ **Non vérifié visuellement** : aucun outil de navigateur n'était disponible dans cette session. Le payload API, le calcul pur (Vitest) et la compilation TypeScript sont validés ; le rendu carte réel (fluidité de l'animation, alignement visuel de la plage) reste à confirmer à l'œil par l'utilisateur.
+- **P4 terminé** : module marée (saisie, interpolation en cosinus, graphique synchronisé).
+  - ✅ `core/tides.py` : `interpoler_cosinus()` (formule exacte du §5), `tendance()`, `echantillonner()` (toutes les 5 min), `convertir_vers_utc()` (UTC / UTC+1 fixe / heure légale avec bascule été-hiver automatique via `zoneinfo`), `parser_csv()` (Option B). 24 tests pytest verts.
+  - ✅ Modèle `MareeReleve` (event_id, moment_utc, hauteur_m, type `pm`/`bm`/`mesure`), toujours stocké en UTC.
+  - ✅ Écran `/orga/maree` : Option A (formulaire point par point : date, heure, hauteur, PM/BM, fuseau source) et Option B (upload CSV `datetime;hauteur_m`, réimport qui remplace proprement les mesures CSV sans toucher aux extrêmes saisis en Option A — même logique de réimport « propre » qu'en P2 pour les tronçons).
+  - ✅ Endpoint `/orga/maree/serie.json?debut_s=&fin_s=` : mêmes bornes (secondes depuis minuit Europe/Paris) que l'horloge de simulation, série échantillonnée + liste des extrêmes PM/BM, tout exprimé directement dans le référentiel `horloge.tempsS` pour que le front n'ait aucune conversion de fuseau à faire.
+  - ✅ Store Pinia `maree` (`hauteurAt()`, `tendanceAt()` — interpolation linéaire entre échantillons 5 min, testées Vitest) et `GraphiqueMaree.vue` (Chart.js + chartjs-plugin-annotation, curseur vertical synchronisé sur `horloge.tempsS`, clic sur le graphique = `horloge.definirTemps()`, texte « Hauteur d'eau : X,XX m — marée montante/descendante »).
+  - ✅ 91 tests pytest + 36 tests Vitest verts au total.
+  - ✅ **Vérifié de bout en bout sur un vrai serveur `flask run`**, y compris les deux modes de saisie (Option A + Option B CSV, réimport sans doublon) et la cohérence chiffrée de l'interpolation : une mesure CSV saisie à 09:00 à 5,80 m ressort **exactement** à 5,80 m dans `serie.json` au même instant.
+  - ⚠️ Comme en P3, le rendu du graphique lui-même (Chart.js dans le navigateur) n'a pas pu être vérifié visuellement — aucun outil navigateur disponible dans cette session.
 
 ## Décisions techniques et justification
 
@@ -59,6 +68,8 @@ Contexte complet du projet : voir `prompt-claude-code-swimrun-stpabu.md` à la r
 - **`étalement` du peloton (panneau d'état, §5)** : le cahier des charges demande un étalement « en mètres et en minutes » sans formule. Implémenté comme : mètres = distance tête − distance queue ; minutes = ce même écart en mètres divisé par l'allure *du dernier coureur sur son tronçon courant*. C'est une approximation raisonnable (pas une mesure physique exacte, puisque premier et dernier n'ont pas la même allure), à ajuster si l'utilisateur préfère une autre définition une fois testé en vrai.
 - **Boucle d'animation `requestAnimationFrame` tourne en continu**, indépendamment de l'état lecture/pause (`horloge.avancer()` ne fait rien si `enLecture` est faux, mais `mettreAJourCarte()` s'exécute quand même à chaque frame). Volontaire : permet à la carte de refléter immédiatement un déplacement manuel du curseur ou un saut d'heure, même à l'arrêt, sans logique de dirty-checking séparée. Le coût (quelques appels Turf par course et par frame) est négligeable pour 3 courses.
 - **`verbatimModuleSyntax` de TypeScript** (activé via `@vue/tsconfig`) exige `import type { ... }` pour tout ce qui n'est que des types (ex. `CircleLayerSpecification`, `LineLayerSpecification` de maplibre-gl) — sinon `vue-tsc -b` échoue avec `TS1484`. Séparer systématiquement les imports de valeurs et de types quand une bibliothèque mélange les deux dans le même module.
+- **Une seule fonction d'interpolation cosinus pour les deux modes de saisie** (Option A extrêmes PM/BM et Option B mesures CSV brutes) : le cahier des charges n'annonce la formule cosinus qu'« (Option A) », mais rien n'empêche mathématiquement de l'appliquer aussi entre deux mesures CSV consécutives — c'est juste moins physiquement motivé (l'ease-in/out a du sens entre deux extrêmes réels, moins entre deux mesures arbitraires rapprochées). Simplification assumée pour ne pas maintenir deux algorithmes d'interpolation ; `MareeReleve.type` distingue quand même `pm`/`bm`/`mesure` pour que seuls les vrais extrêmes soient marqués sur le graphique.
+- **`serie.json` reçoit `debut_s`/`fin_s` en « secondes depuis minuit Europe/Paris »** (le référentiel déjà utilisé par `horloge.tempsS` et `Course.start_time`), pas des timestamps UTC. Le backend fait toute la conversion de fuseau (combine `Event.date` + les secondes, localise en heure légale, convertit en UTC pour interroger les `MareeReleve`), et renvoie la série déjà réexprimée dans ce même référentiel de secondes locales. Le front n'a donc aucune arithmétique de fuseau horaire à faire — juste tracer `secondes` en x.
 
 ## Pièges rencontrés
 
@@ -89,13 +100,13 @@ cd frontend
 npm install
 npm run build     # génère backend/app/static/dist/ (manifest inclus)
 npm run dev        # serveur Vite avec proxy /api -> Flask (nécessite VITE_DEV_SERVER=1 côté Flask, pas encore branché de bout en bout)
-npm run test       # Vitest (simulation.ts, temps.ts)
+npm run test       # Vitest (simulation.ts, temps.ts, stores/maree.ts)
 ```
 
-## Prochaines étapes (P4)
+## Prochaines étapes (P5)
 
-- Module Marée : saisie des données (tableau PM/BM ou import CSV, sélecteur de fuseau de la source), interpolation en cosinus dans `core/tides.py` (tests pytest), série échantillonnée toutes les 5 min fournie au front.
-- Graphique 2D (Chart.js + chartjs-plugin-annotation — pas encore installé) avec curseur vertical synchronisé sur le store Pinia `horloge` existant (P3) : c'est déjà « la source de vérité pour la carte et le graphique de marée » comme prévu au cahier des charges, donc pas de nouveau store à créer, juste à brancher un composant graphique dessus.
-- Clic sur le graphique déplace l'horloge de simulation (`horloge.definirTemps()`, déjà l'action utilisée par le slider et le saut à une heure — réutilisable telle quelle).
-- Affichage de la hauteur d'eau courante et de la tendance (montante/descendante).
-- Plus tard : premier déploiement réel sur PythonAnywhere (compte à créer/fournir côté utilisateur), intégration du logo/captures dans `docs/brand/` pour extraire une vraie palette (actuellement palette provisoire), et validation visuelle en navigateur de tout ce qui a été construit sans outil de navigateur disponible (P3 notamment).
+- POI (CRUD) : type (ravitaillement, entrée dans l'eau, sortie de l'eau, bouée directionnelle), nom, course(s) concernée(s), coordonnées, description courte, côté de passage pour les bouées. Placement par clic sur la carte (réutiliser `carte-simulation.ts` / le module carte de l'orga pour capter un clic et remplir lat/lon dans un formulaire).
+- Km de chaque POI calculé automatiquement par projection sur le tracé de la course (`core/geometry.py` a déjà `project_equirectangular` — vérifier si une fonction de projection-sur-ligne manque encore, sinon l'ajouter avec tests).
+- Publication : bouton qui génère dans `data/published/` (déjà prévu dans l'architecture, vide pour l'instant) `meta.json`, `course-{id}.geojson`, `pois-{id}.json` — **sans aucune allure ni donnée de simulation**, conformément à l'exigence de découplage public/privé du cahier des charges (§1, §3, §5). Prévoir `core/publish.py` pur Python testable, distinct des routes.
+- Affichage de la date de dernière publication + aperçu du site public dans l'écran orga.
+- Plus tard : premier déploiement réel sur PythonAnywhere (compte à créer/fournir côté utilisateur), intégration du logo/captures dans `docs/brand/` pour extraire une vraie palette (actuellement palette provisoire), et validation visuelle en navigateur de tout ce qui a été construit sans outil de navigateur disponible (P3 et P4 notamment).

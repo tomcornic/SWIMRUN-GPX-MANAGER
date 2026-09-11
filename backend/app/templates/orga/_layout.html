@@ -39,6 +39,7 @@
   <a href="{{ url_for('orga.index') }}">Accueil</a>
   <a href="{{ url_for('orga.evenement') }}">Événement</a>
   <a href="{{ url_for('orga.courses_liste') }}">Courses</a>
+  <a href="{{ url_for('orga.maree') }}">Marée</a>
   <form method="post" action="{{ url_for('orga.logout') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button type="submit">Déconnexion</button>

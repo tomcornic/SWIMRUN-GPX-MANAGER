@@ -41,6 +41,9 @@ class Event(db.Model):
     courses: Mapped[list[Course]] = relationship(
         back_populates="event", cascade="all, delete-orphan", order_by="Course.id"
     )
+    releves_maree: Mapped[list[MareeReleve]] = relationship(
+        back_populates="event", cascade="all, delete-orphan", order_by="MareeReleve.moment_utc"
+    )
 
 
 class Course(db.Model):
@@ -86,3 +89,18 @@ class Troncon(db.Model):
     @points.setter
     def points(self, value: list[tuple[float, float]]) -> None:
         self.points_json = json.dumps(value)
+
+
+class MareeReleve(db.Model):
+    """Un point de marée saisi par l'organisateur (§5) : extrême PM/BM (Option A) ou
+    mesure brute importée par CSV (Option B). Toujours stocké en UTC."""
+
+    __tablename__ = "releves_maree"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id"))
+    moment_utc: Mapped[dt.datetime]
+    hauteur_m: Mapped[float]
+    type: Mapped[str]  # "pm", "bm" ou "mesure"
+
+    event: Mapped[Event] = relationship(back_populates="releves_maree")

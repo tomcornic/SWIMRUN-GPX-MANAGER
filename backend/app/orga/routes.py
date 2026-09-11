@@ -1,6 +1,8 @@
 import json
 import shutil
+from datetime import datetime, time, timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from flask import current_app, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
@@ -12,10 +14,17 @@ from app.core.gpx_import import (
     import_troncon_file,
 )
 from app.core.pace import format_mmss, parse_mmss
+from app.core.tides import (
+    CsvMareeInvalideError,
+    PointMaree,
+    convertir_vers_utc,
+    echantillonner,
+    parser_csv,
+)
 from app.extensions import db
-from app.models import Course, Event, Troncon, User
+from app.models import Course, Event, MareeReleve, Troncon, User
 from app.orga import bp
-from app.orga.forms import CourseForm, EventForm, LoginForm
+from app.orga.forms import CourseForm, EventForm, LoginForm, MareeCsvForm, MareeReleveForm
 
 MAX_COURSES_PER_EVENT = 3
 
@@ -312,5 +321,146 @@ def course_simulation_json(course_id: int):
             ],
             "allures": allures,
             "trace": {"type": "LineString", "coordinates": coordinates},
+        }
+    )
+
+
+def _flash_form_errors(form) -> None:
+    for field_errors in form.errors.values():
+        for error in field_errors:
+            flash(error, "error")
+
+
+@bp.route("/maree")
+@login_required
+def maree():
+    event = Event.query.first()
+    releves = event.releves_maree if event else []
+    return render_template(
+        "orga/maree.html",
+        event=event,
+        releves=releves,
+        releve_form=MareeReleveForm(),
+        csv_form=MareeCsvForm(),
+    )
+
+
+@bp.route("/maree/ajouter", methods=["POST"])
+@login_required
+def maree_ajouter():
+    event = Event.query.first()
+    if event is None:
+        flash("Configurez d'abord l'événement.", "error")
+        return redirect(url_for("orga.evenement"))
+
+    form = MareeReleveForm()
+    if form.validate_on_submit():
+        moment_naif = datetime.combine(form.date.data, form.heure.data)
+        moment_utc = convertir_vers_utc(moment_naif, form.fuseau_source.data)
+        releve = MareeReleve(
+            event_id=event.id,
+            moment_utc=moment_utc,
+            hauteur_m=form.hauteur_m.data,
+            type=form.type.data,
+        )
+        db.session.add(releve)
+        db.session.commit()
+        flash("Point de marée ajouté.", "success")
+    else:
+        _flash_form_errors(form)
+
+    return redirect(url_for("orga.maree"))
+
+
+@bp.route("/maree/importer-csv", methods=["POST"])
+@login_required
+def maree_importer_csv():
+    event = Event.query.first()
+    if event is None:
+        flash("Configurez d'abord l'événement.", "error")
+        return redirect(url_for("orga.evenement"))
+
+    form = MareeCsvForm()
+    if not form.validate_on_submit():
+        _flash_form_errors(form)
+        return redirect(url_for("orga.maree"))
+
+    contenu = form.fichier.data.read().decode("utf-8")
+    try:
+        lignes = parser_csv(contenu)
+    except CsvMareeInvalideError as exc:
+        flash(str(exc), "error")
+        return redirect(url_for("orga.maree"))
+
+    MareeReleve.query.filter_by(event_id=event.id, type="mesure").delete()
+    for moment_naif, hauteur in lignes:
+        moment_utc = convertir_vers_utc(moment_naif, form.fuseau_source.data)
+        db.session.add(
+            MareeReleve(event_id=event.id, moment_utc=moment_utc, hauteur_m=hauteur, type="mesure")
+        )
+    db.session.commit()
+    flash(f"{len(lignes)} mesure(s) importée(s).", "success")
+    return redirect(url_for("orga.maree"))
+
+
+@bp.route("/maree/<int:releve_id>/supprimer", methods=["POST"])
+@login_required
+def maree_supprimer(releve_id: int):
+    releve = db.get_or_404(MareeReleve, releve_id)
+    db.session.delete(releve)
+    db.session.commit()
+    flash("Point de marée supprimé.", "success")
+    return redirect(url_for("orga.maree"))
+
+
+def _seconds_since_local_midnight(event_date, moment_utc: datetime) -> float:
+    moment_local = moment_utc.astimezone(ZoneInfo("Europe/Paris"))
+    minuit_local = datetime.combine(event_date, time.min, tzinfo=ZoneInfo("Europe/Paris"))
+    return (moment_local - minuit_local).total_seconds()
+
+
+@bp.route("/maree/serie.json")
+@login_required
+def maree_serie_json():
+    event = Event.query.first()
+    if event is None:
+        return jsonify({"serie": [], "extremes": []})
+
+    try:
+        debut_s = int(request.args.get("debut_s", "0"))
+        fin_s = int(request.args.get("fin_s", "0"))
+    except ValueError:
+        return jsonify({"error": "debut_s et fin_s doivent être des entiers."}), 400
+
+    minuit_naif = datetime.combine(event.date, time.min)
+    debut_utc = convertir_vers_utc(minuit_naif + timedelta(seconds=debut_s), "legale")
+    fin_utc = convertir_vers_utc(minuit_naif + timedelta(seconds=fin_s), "legale")
+
+    points = [
+        PointMaree(moment=r.moment_utc.replace(tzinfo=timezone.utc), hauteur_m=r.hauteur_m)
+        for r in event.releves_maree
+    ]
+    serie = echantillonner(points, debut_utc, fin_utc)
+    extremes = [r for r in event.releves_maree if r.type in ("pm", "bm")]
+
+    return jsonify(
+        {
+            "serie": [
+                {
+                    "secondes": _seconds_since_local_midnight(event.date, p.moment),
+                    "hauteur_m": p.hauteur_m,
+                }
+                for p in serie
+            ],
+            "extremes": [
+                {
+                    "secondes": _seconds_since_local_midnight(
+                        event.date, r.moment_utc.replace(tzinfo=timezone.utc)
+                    ),
+                    "hauteur_m": r.hauteur_m,
+                    "type": r.type,
+                }
+                for r in extremes
+            ],
         }
     )
