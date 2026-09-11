@@ -12,6 +12,7 @@ def app(tmp_path):
         TESTING = True
         SQLALCHEMY_DATABASE_URI = f"sqlite:///{tmp_path / 'test.db'}"
         UPLOADS_DIR = tmp_path / "uploads"
+        PUBLISHED_DIR = tmp_path / "published"
         WTF_CSRF_ENABLED = False
 
     flask_app = create_app(TestConfig)

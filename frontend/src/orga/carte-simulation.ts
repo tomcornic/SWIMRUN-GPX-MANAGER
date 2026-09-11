@@ -1,10 +1,11 @@
 import along from "@turf/along";
 import { lineString, point } from "@turf/helpers";
 import lineSliceAlong from "@turf/line-slice-along";
-import type { Feature, LineString, Point, Position } from "geojson";
+import type { Feature, Point, Position } from "geojson";
 import { Map as MaplibreMap } from "maplibre-gl";
 import type { CircleLayerSpecification, GeoJSONSource, LineLayerSpecification } from "maplibre-gl";
 
+import { segmentsParType } from "../shared/map";
 import type { Course } from "./simulation";
 
 const EPAISSEUR_PLAGE = 8;
@@ -103,25 +104,6 @@ export function afficherMarqueurs(
   creerMarqueur(map, sourceId(courseId, "queue"), queue, "#ffffff");
 }
 
-/**
- * Construit les coordonnées de chaque tronçon (pour un rendu distinct course/nage) à
- * partir du tracé complet et des longueurs de tronçon, via lineSliceAlong.
- */
-export function tronconsCoordinates(ligne: Position[], course: Course): { type: "run" | "swim"; coords: Position[] }[] {
-  if (ligne.length < 2) return [];
-  const complet = lineString(ligne);
-  let cumul = 0;
-  const resultat: { type: "run" | "swim"; coords: Position[] }[] = [];
-  for (const troncon of course.troncons) {
-    const debut = cumul;
-    const fin = cumul + troncon.longueurM;
-    const tranche = lineSliceAlong(complet, debut, fin, { units: "meters" }) as Feature<LineString>;
-    resultat.push({ type: troncon.type, coords: tranche.geometry.coordinates });
-    cumul = fin;
-  }
-  return resultat;
-}
-
 /** Affiche le tracé de base avec les tronçons de natation en trait pointillé. */
 export function afficherTraceDistincte(
   map: MaplibreMap,
@@ -130,7 +112,13 @@ export function afficherTraceDistincte(
   course: Course,
   couleur: string
 ): void {
-  const segments = tronconsCoordinates(ligne, course);
+  let cumul = 0;
+  const bornes = course.troncons.map((troncon) => {
+    const debutM = cumul;
+    cumul += troncon.longueurM;
+    return { type: troncon.type, debutM, finM: cumul };
+  });
+  const segments = segmentsParType(ligne, bornes);
   const runId = sourceId(courseId, "trace-run");
   const swimId = sourceId(courseId, "trace-swim");
 

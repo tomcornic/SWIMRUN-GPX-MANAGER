@@ -1,0 +1,41 @@
+/* Styles globaux pour les marqueurs créés dynamiquement (maplibregl.Marker avec élément
+   DOM personnalisé) : les <style scoped> des composants Vue ne s'y appliquent pas. */
+
+.marqueur-poi {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid #1d4ed8;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  padding: 0;
+}
+
+.marqueur-position {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--couleur-position, #1d4ed8);
+  border: 3px solid white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.badge-passage {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #f97316;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}

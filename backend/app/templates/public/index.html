@@ -1,18 +1,32 @@
-{% extends "base.html" %}
-{% set asset = vite_asset('public') %}
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+  <title>{{ meta.nom if meta else "Swimrun de Saint-Pabu" }} — Parcours</title>
+  <meta name="description" content="Repérez le parcours du {{ meta.nom if meta else 'Swimrun de Saint-Pabu' }} : tracé, ravitaillements, marée.">
 
-{% block title %}Parcours — Swimrun de Saint-Pabu{% endblock %}
+  <meta property="og:title" content="{{ meta.nom if meta else 'Swimrun de Saint-Pabu' }}">
+  <meta property="og:description" content="Parcours interactif{{ ' — ' + meta.date if meta and meta.date else '' }}.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="{{ url_for('static', filename='img/favicon.jpg', _external=True) }}">
 
-{% block head %}
+  <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='img/favicon.jpg') }}">
+
+  {% set asset = vite_asset('public') %}
   {% for href in asset.css_hrefs %}
   <link rel="stylesheet" href="{{ href }}">
   {% endfor %}
-{% endblock %}
-
-{% block body %}
+  <style>
+    html, body, #app { height: 100%; margin: 0; }
+    body { font-family: system-ui, sans-serif; }
+  </style>
+</head>
+<body>
   <div id="app"></div>
   {% if asset.dev %}
   <script type="module" src="{{ asset.client_src }}"></script>
   {% endif %}
   <script type="module" src="{{ asset.script_src }}"></script>
-{% endblock %}
+</body>
+</html>
