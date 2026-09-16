@@ -26,12 +26,21 @@ function setOrCreateSource(map: MaplibreMap, id: string, data: Feature): void {
   }
 }
 
-/** Charge l'icône de flèche directionnelle (image, pas de police de glyphes nécessaire). */
+/**
+ * Charge l'icône de flèche directionnelle (image, pas de police de glyphes nécessaire).
+ *
+ * Volontairement décodée via un `<img>` (`decode()`) plutôt que `map.loadImage()` : cette
+ * dernière décode via `createImageBitmap()` en interne, qui ne sait pas décoder du SVG dans la
+ * plupart des navigateurs (`DOMException: The image could not be decoded`) alors qu'un `<img>`
+ * classique le fait très bien.
+ */
 export async function chargerIconeFleche(map: MaplibreMap): Promise<void> {
   if (map.hasImage(ID_ICONE_FLECHE)) return;
   const url = `data:image/svg+xml;base64,${btoa(ARROW_SVG)}`;
-  const image = await map.loadImage(url);
-  map.addImage(ID_ICONE_FLECHE, image.data);
+  const image = new Image(24, 24);
+  image.src = url;
+  await image.decode();
+  map.addImage(ID_ICONE_FLECHE, image);
 }
 
 /**

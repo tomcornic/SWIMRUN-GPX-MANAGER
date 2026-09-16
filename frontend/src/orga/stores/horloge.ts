@@ -9,7 +9,7 @@ export const useHorlogeStore = defineStore("horloge", {
     borneDebutS: 0,
     borneFinS: 0,
     enLecture: false,
-    vitesse: 1 as Vitesse,
+    vitesse: 60 as Vitesse,
   }),
   actions: {
     initialiserBornes(debutS: number, finS: number): void {

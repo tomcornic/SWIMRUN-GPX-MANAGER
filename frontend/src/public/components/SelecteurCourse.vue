@@ -32,15 +32,15 @@ const store = useParcoursStore();
   gap: 0.4rem;
   padding: 0.5rem;
   overflow-x: auto;
-  background: #0f172a;
+  background: var(--couleur-chrome-fond);
 }
 
 .selecteur-course button {
   border: none;
   border-radius: 999px;
   padding: 0.4rem 0.9rem;
-  background: #1e293b;
-  color: white;
+  background: var(--couleur-chrome-fond-clair);
+  color: var(--couleur-chrome-texte);
   font: inherit;
   cursor: pointer;
   white-space: nowrap;
@@ -49,7 +49,7 @@ const store = useParcoursStore();
 
 .selecteur-course button.actif {
   border-bottom-color: var(--couleur);
-  background: #334155;
+  background: var(--couleur-chrome-fond-actif);
   font-weight: 600;
 }
 </style>

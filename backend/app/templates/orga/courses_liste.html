@@ -26,7 +26,7 @@
           <form method="post" action="{{ url_for('orga.course_supprimer', course_id=course.id) }}"
                 style="display:inline" onsubmit="return confirm('Supprimer cette course ?');">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" style="border:none;background:none;color:#b91c1c;cursor:pointer;font:inherit;">Supprimer</button>
+            <button type="submit" style="border:none;background:none;color:var(--couleur-danger);cursor:pointer;font:inherit;">Supprimer</button>
           </form>
         </td>
       </tr>

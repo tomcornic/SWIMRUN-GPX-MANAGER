@@ -6,7 +6,7 @@
   height: 32px;
   border-radius: 50%;
   background: white;
-  border: 2px solid #1d4ed8;
+  border: 2px solid var(--couleur-accent);
   font-size: 1.1rem;
   display: flex;
   align-items: center;
@@ -20,7 +20,7 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: var(--couleur-position, #1d4ed8);
+  background: var(--couleur-position, var(--couleur-accent));
   border: 3px solid white;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
 }
@@ -29,7 +29,7 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: #f97316;
+  background: var(--couleur-poi);
   color: white;
   font-size: 0.75rem;
   font-weight: 700;

@@ -1,8 +1,20 @@
 import { lineString } from "@turf/helpers";
 import lineSliceAlong from "@turf/line-slice-along";
 import type { Feature, LineString, Position } from "geojson";
-import { AttributionControl, Map as MaplibreMap, NavigationControl } from "maplibre-gl";
+import { AttributionControl, Map as MaplibreMap, NavigationControl, setWorkerUrl } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+
+/**
+ * maplibre-gl calcule l'URL de son worker à partir de `import.meta.url` du chunk où il est
+ * bundlé (donc `.../assets/<notre-chunk>.js`) au lieu du fichier worker réel, qui n'est jamais
+ * émis par Rollup — sans ce `setWorkerUrl`, le worker se charge en `text/html` (404) et toute la
+ * carte reste inerte. Le chemin fixe correspond au fichier copié tel quel par le plugin Vite
+ * `copyMaplibreWorkerFiles` (voir vite.config.ts) ; en dev, le worker se résout normalement
+ * puisque Vite sert node_modules/maplibre-gl sans le fusionner dans un chunk.
+ */
+if (!import.meta.env.DEV) {
+  setWorkerUrl("/static/dist/assets/maplibre-gl-worker.mjs");
+}
 
 const IGN_ORTHO_TILES_URL =
   "https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0" +

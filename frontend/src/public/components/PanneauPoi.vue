@@ -23,11 +23,12 @@ const emit = defineEmits<{ fermer: []; aller: [distanceM: number] }>();
   left: 0;
   right: 0;
   bottom: 0;
-  background: white;
+  background: var(--couleur-surface);
+  color: var(--couleur-texte);
   padding: 1rem;
   border-top-left-radius: 12px;
   border-top-right-radius: 12px;
-  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--ombre-forte);
   z-index: 20;
 }
 
@@ -58,7 +59,7 @@ h3 {
 }
 
 .type {
-  color: #64748b;
+  color: var(--couleur-texte-att);
   font-size: 0.85rem;
   margin: 0 0 0.5rem;
 }
@@ -68,8 +69,8 @@ h3 {
   padding: 0.4rem 0.8rem;
   border: none;
   border-radius: 6px;
-  background: #1d4ed8;
-  color: white;
+  background: var(--couleur-accent);
+  color: var(--couleur-accent-texte);
   cursor: pointer;
   font: inherit;
 }

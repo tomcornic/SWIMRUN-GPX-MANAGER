@@ -46,7 +46,10 @@ onUnmounted(() => window.removeEventListener("keydown", onKeydown));
 
     <span class="horloge">{{ heureAffichee }}</span>
 
-    <input type="time" step="1" @change="onSaisieHeure" title="Aller à une heure précise" />
+    <label class="saut-heure">
+      Aller à :
+      <input type="time" step="1" @change="onSaisieHeure" title="Aller à une heure précise" />
+    </label>
 
     <input
       class="slider"
@@ -66,16 +69,16 @@ onUnmounted(() => window.removeEventListener("keydown", onKeydown));
   align-items: center;
   gap: 0.75rem;
   padding: 0.6rem 1rem;
-  background: #0f172a;
-  color: white;
+  background: var(--couleur-chrome-fond);
+  color: var(--couleur-chrome-texte);
 }
 
 .bouton-lecture {
   padding: 0.4rem 0.9rem;
   border: none;
   border-radius: 4px;
-  background: #1d4ed8;
-  color: white;
+  background: var(--couleur-accent);
+  color: var(--couleur-accent-texte);
   cursor: pointer;
   font: inherit;
   white-space: nowrap;
@@ -95,5 +98,13 @@ onUnmounted(() => window.removeEventListener("keydown", onKeydown));
 select,
 input[type="time"] {
   font: inherit;
+}
+
+.saut-heure {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
 }
 </style>

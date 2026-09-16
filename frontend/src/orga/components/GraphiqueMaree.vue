@@ -34,6 +34,11 @@ const maree = useMareeStore();
 
 let chart: Chart<"line"> | null = null;
 
+function cssVar(nom: string): string {
+  // Lu sur <body>, pas <html> : les variables par thème sont posées sur [data-theme] au niveau body.
+  return getComputedStyle(document.body).getPropertyValue(nom).trim();
+}
+
 const hauteurCourante = computed(() => maree.hauteurAt(horloge.tempsS));
 const tendanceCourante = computed(() => maree.tendanceAt(horloge.tempsS));
 const texteHauteur = computed(() => {
@@ -49,8 +54,8 @@ function construireDonnees() {
       {
         label: "Hauteur d'eau (m)",
         data: maree.serie.map((p) => ({ x: p.secondes, y: p.hauteurM })),
-        borderColor: "#0369a1",
-        backgroundColor: "rgba(3, 105, 161, 0.12)",
+        borderColor: cssVar("--couleur-swim"),
+        backgroundColor: cssVar("--couleur-swim-fond"),
         fill: true,
         pointRadius: 0,
         borderWidth: 2,
@@ -60,7 +65,7 @@ function construireDonnees() {
         label: "PM / BM",
         data: maree.extremes.map((e) => ({ x: e.secondes, y: e.hauteurM })),
         borderColor: "transparent",
-        backgroundColor: "#f97316",
+        backgroundColor: cssVar("--couleur-sable"),
         pointRadius: 5,
         showLine: false,
       },
@@ -87,18 +92,24 @@ function creerGraphique(): void {
       scales: {
         x: {
           type: "linear",
-          ticks: { callback: (valeur) => formaterHMS(Number(valeur)).slice(0, 5) },
+          ticks: { color: cssVar("--couleur-texte-att"), callback: (valeur) => formaterHMS(Number(valeur)).slice(0, 5) },
+          grid: { color: cssVar("--couleur-bordure") },
         },
-        y: { title: { display: true, text: "m" } },
+        y: {
+          title: { display: true, text: "m", color: cssVar("--couleur-texte-att") },
+          ticks: { color: cssVar("--couleur-texte-att") },
+          grid: { color: cssVar("--couleur-bordure") },
+        },
       },
       plugins: {
+        legend: { labels: { color: cssVar("--couleur-texte") } },
         annotation: {
           annotations: {
             curseur: {
               type: "line",
               xMin: horloge.tempsS,
               xMax: horloge.tempsS,
-              borderColor: "#dc2626",
+              borderColor: cssVar("--couleur-curseur"),
               borderWidth: 2,
             },
           },
@@ -146,8 +157,8 @@ onUnmounted(() => chart?.destroy());
 
 <style scoped>
 .graphique-maree {
-  background: white;
-  border-top: 1px solid #e2e8f0;
+  background: var(--couleur-surface);
+  border-top: 1px solid var(--couleur-bordure);
   padding: 0.5rem 1rem;
 }
 
@@ -155,6 +166,7 @@ onUnmounted(() => chart?.destroy());
   margin: 0 0 0.3rem;
   font-size: 0.9rem;
   font-weight: 600;
+  color: var(--couleur-texte);
 }
 
 .conteneur-canvas {

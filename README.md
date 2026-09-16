@@ -56,7 +56,7 @@ Sert les modules directement depuis Vite (proxy `/api` → `http://127.0.0.1:500
    (adapter la version Python à ce que propose le compte — voir `help.pythonanywhere.com/pages/PythonVersions`).
 3. **Fichier WSGI** : dans l'onglet *Web* de PythonAnywhere, pointer le fichier WSGI généré vers `backend/wsgi.py` (`application = app`, à adapter selon le nom attendu par PA — le fichier expose déjà `app`).
 4. **Mapping des fichiers statiques** : dans l'onglet *Web*, ajouter une entrée *Static files* : URL `/static/` → chemin `.../backend/app/static/`, pour qu'ils soient servis directement sans passer par Flask.
-5. **Variables d'environnement** : définir `SECRET_KEY` (ne jamais la versionner) dans l'onglet *Web* (section *Environment variables*) ou dans le fichier WSGI. Créer la base SQLite et le premier compte orga via la commande CLI `flask create-user` (à implémenter en P2).
+5. **Variables d'environnement** : définir `SECRET_KEY` (ne jamais la versionner) dans l'onglet *Web* (section *Environment variables*) ou dans le fichier WSGI. La base SQLite se crée automatiquement au premier lancement ; créer le premier compte orga avec `FLASK_APP=backend/wsgi.py PYTHONPATH=backend .venv/bin/flask create-user` dans une console Bash PA.
 6. **Recharger la web app** (bouton *Reload* de l'onglet *Web*) puis vérifier :
    - `/` et `/orga/` répondent en `200`.
    - La carte satellite IGN s'affiche (vérifier que le serveur PA autorise bien les appels sortants du **navigateur** vers `data.geopf.fr` — aucun appel sortant n'est fait côté Python, donc pas de souci avec la restriction réseau de PA).

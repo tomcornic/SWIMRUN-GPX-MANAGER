@@ -1,0 +1,98 @@
+/* Fichier de thème unique (§2 du cahier des charges) : toutes les couleurs de l'appli passent par
+   ces variables CSS. Palette extraite de docs/brand/{logo,affiche}.jpg via
+   backend/scripts/extract_palette.py. Deux variantes, une par surface (choix « hybride » de
+   l'utilisateur, cf. CLAUDE.md) :
+   - [data-theme="plage"]  : site public (/), ambiance jour/plage, fond crème.
+   - [data-theme="veille"] : interface organisateur (/orga), fond bleu nuit, pensé usage terrain
+     jour J (forte lisibilité en extérieur / de nuit).
+*/
+
+:root {
+  /* Couleurs de marque brutes */
+  --marque-creme: #fdfaf3;
+  --marque-bleu-acier: #3f6d90;
+  --marque-bleu-clair: #79b0cb;
+  --marque-corail: #d94f72;
+  --marque-corail-doux: #e67e83;
+  --marque-sable: #f0b94a;
+
+  /* Chrome des cartes (boutons flottants, barres de contrôle par-dessus le fond satellite/plan) :
+     volontairement identique dans les deux thèmes, la carte elle-même n'est pas thémée. */
+  --couleur-chrome-fond: #0f172a;
+  --couleur-chrome-fond-clair: #1e293b;
+  --couleur-chrome-fond-actif: #334155;
+  --couleur-chrome-fond-survol: rgba(15, 23, 42, 0.85);
+  --couleur-chrome-texte: #ffffff;
+}
+
+[data-theme="plage"] {
+  color-scheme: light;
+
+  --couleur-fond: var(--marque-creme);
+  --couleur-fond-alt: #f7f1e1;
+  --couleur-surface: #fffaf0;
+  --couleur-surface-alt: #f8fafc;
+  --couleur-texte: #2b2620;
+  --couleur-texte-att: #6f6656;
+  --couleur-bordure: #e8ddc4;
+
+  --couleur-accent: var(--marque-bleu-acier);
+  --couleur-accent-hover: #345a78;
+  --couleur-accent-texte: #ffffff;
+
+  --couleur-corail: var(--marque-corail);
+  --couleur-sable: var(--marque-sable);
+  --couleur-run: #2f8f5c;
+  --couleur-swim: var(--marque-bleu-acier);
+  --couleur-swim-fond: rgba(63, 109, 144, 0.12);
+  --couleur-poi: var(--marque-corail);
+  --couleur-curseur: var(--marque-corail);
+
+  --couleur-succes-fond: #e4f3e6;
+  --couleur-succes-texte: #1f6b3a;
+  --couleur-alerte-fond: #fdf1da;
+  --couleur-alerte-texte: #8a5a12;
+  --couleur-danger: #c23b3b;
+  --couleur-danger-hover: #a02f2f;
+  --couleur-danger-fond: #fbe4e4;
+  --couleur-danger-texte: #a02f2f;
+
+  --ombre: 0 1px 4px rgba(60, 40, 20, 0.18);
+  --ombre-forte: 0 -2px 12px rgba(60, 40, 20, 0.22);
+}
+
+[data-theme="veille"] {
+  color-scheme: dark;
+
+  --couleur-fond: #0f172a;
+  --couleur-fond-alt: #16213e;
+  --couleur-surface: #1b2947;
+  --couleur-surface-alt: #223258;
+  --couleur-texte: #eef2f8;
+  --couleur-texte-att: #97a3bd;
+  --couleur-bordure: #2c3b60;
+
+  --couleur-accent: var(--marque-bleu-clair);
+  --couleur-accent-hover: #94c3da;
+  --couleur-accent-texte: #0f172a;
+
+  --couleur-corail: #f08a95;
+  --couleur-sable: #f8d379;
+  --couleur-run: #4ade80;
+  --couleur-swim: var(--marque-bleu-clair);
+  --couleur-swim-fond: rgba(121, 176, 203, 0.15);
+  --couleur-poi: #f08a95;
+  --couleur-curseur: #f8d379;
+
+  --couleur-succes-fond: rgba(74, 222, 128, 0.15);
+  --couleur-succes-texte: #86efac;
+  --couleur-alerte-fond: rgba(248, 211, 121, 0.15);
+  --couleur-alerte-texte: #f8d379;
+  --couleur-danger: #f87171;
+  --couleur-danger-hover: #fca5a5;
+  --couleur-danger-fond: rgba(248, 113, 113, 0.18);
+  --couleur-danger-texte: #fca5a5;
+
+  --ombre: 0 1px 4px rgba(0, 0, 0, 0.45);
+  --ombre-forte: 0 -2px 12px rgba(0, 0, 0, 0.5);
+}

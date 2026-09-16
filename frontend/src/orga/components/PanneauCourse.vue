@@ -98,16 +98,17 @@ const donnees = computed(() => {
   border-left: 4px solid;
   padding: 0.5rem 0.75rem;
   margin-bottom: 0.75rem;
-  background: #f8fafc;
+  background: var(--couleur-surface-alt);
 }
 
 .panneau-course h3 {
   margin: 0 0 0.4rem;
   font-size: 0.95rem;
+  color: var(--couleur-texte);
 }
 
 .info-manquante {
-  color: #92400e;
+  color: var(--couleur-alerte-texte);
   font-size: 0.85rem;
   margin: 0;
 }
@@ -120,10 +121,11 @@ dl {
 dt {
   font-weight: 600;
   margin-top: 0.3rem;
+  color: var(--couleur-texte);
 }
 
 dd {
   margin: 0;
-  color: #334155;
+  color: var(--couleur-texte-att);
 }
 </style>

@@ -67,12 +67,12 @@ onMounted(() => {
 
 .carte-poi {
   height: 320px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--couleur-bordure);
 }
 
 .aide {
   font-size: 0.8rem;
-  color: #64748b;
+  color: var(--couleur-texte-att);
   margin: 0.3rem 0 0;
 }
 </style>

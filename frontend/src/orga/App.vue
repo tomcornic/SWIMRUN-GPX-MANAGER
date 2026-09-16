@@ -46,11 +46,18 @@ function mettreAJourCarte(): void {
 }
 
 function boucle(timestamp: number): void {
-  if (dernierTimestamp !== null) {
-    horloge.avancer((timestamp - dernierTimestamp) / 1000);
+  try {
+    if (dernierTimestamp !== null) {
+      horloge.avancer((timestamp - dernierTimestamp) / 1000);
+    }
+    dernierTimestamp = timestamp;
+    mettreAJourCarte();
+  } catch (erreur) {
+    // Une erreur ici ne doit jamais arrêter la boucle silencieusement : sans ce catch, une
+    // exception dans mettreAJourCarte() empêche le requestAnimationFrame suivant d'être
+    // planifié et la simulation entière se fige, sans que lecture/pause ne redonne rien.
+    console.error("Erreur dans la boucle de simulation :", erreur);
   }
-  dernierTimestamp = timestamp;
-  mettreAJourCarte();
   frameId = requestAnimationFrame(boucle);
 }
 
@@ -120,15 +127,15 @@ onUnmounted(() => {
   flex-shrink: 0;
   overflow-y: auto;
   padding: 0.75rem;
-  background: white;
-  border-left: 1px solid #e2e8f0;
+  background: var(--couleur-surface);
+  border-left: 1px solid var(--couleur-bordure);
 }
 
 .aucune-simulation {
   margin: 0;
   padding: 0.6rem 1rem;
-  background: #fef9c3;
-  color: #854d0e;
+  background: var(--couleur-alerte-fond);
+  color: var(--couleur-alerte-texte);
   font-size: 0.85rem;
 }
 </style>

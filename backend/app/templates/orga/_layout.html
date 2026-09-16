@@ -3,31 +3,34 @@
 {% block head %}
 <style>
   :root { font-family: system-ui, sans-serif; }
-  body { margin: 0; color: #1a1a1a; }
-  nav.orga-nav { display: flex; gap: 1rem; align-items: center; padding: 0.75rem 1.25rem; background: #0f172a; color: white; }
-  nav.orga-nav a { color: white; text-decoration: none; font-size: 0.95rem; }
+  body { margin: 0; background: var(--couleur-fond); color: var(--couleur-texte); }
+  nav.orga-nav { display: flex; gap: 1rem; align-items: center; padding: 0.75rem 1.25rem;
+                 background: var(--couleur-fond-alt); color: var(--couleur-texte);
+                 border-bottom: 1px solid var(--couleur-bordure); }
+  nav.orga-nav a { color: var(--couleur-texte); text-decoration: none; font-size: 0.95rem; }
   nav.orga-nav a:hover { text-decoration: underline; }
   nav.orga-nav form { margin-left: auto; }
-  nav.orga-nav button { background: none; border: none; color: white; cursor: pointer; font: inherit; }
+  nav.orga-nav button { background: none; border: none; color: var(--couleur-texte); cursor: pointer; font: inherit; }
   main.orga-main { padding: 1.25rem; max-width: 960px; margin: 0 auto; }
   .flash { padding: 0.6rem 1rem; border-radius: 4px; margin-bottom: 1rem; }
-  .flash-success { background: #dcfce7; color: #166534; }
-  .flash-error { background: #fee2e2; color: #991b1b; }
+  .flash-success { background: var(--couleur-succes-fond); color: var(--couleur-succes-texte); }
+  .flash-error { background: var(--couleur-danger-fond); color: var(--couleur-danger-texte); }
   table { border-collapse: collapse; width: 100%; }
-  th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #e2e8f0; }
-  .status-ok { color: #166534; }
-  .status-avertissement { color: #92400e; }
-  .status-erreur { color: #991b1b; font-weight: 600; }
-  .btn { display: inline-block; padding: 0.5rem 1rem; background: #1d4ed8; color: white;
+  th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid var(--couleur-bordure); }
+  .status-ok { color: var(--couleur-succes-texte); }
+  .status-avertissement { color: var(--couleur-alerte-texte); }
+  .status-erreur { color: var(--couleur-danger-texte); font-weight: 600; }
+  .btn { display: inline-block; padding: 0.5rem 1rem; background: var(--couleur-accent); color: var(--couleur-accent-texte);
          border: none; border-radius: 4px; text-decoration: none; cursor: pointer; font: inherit; }
-  .btn-danger { background: #b91c1c; }
+  .btn-danger { background: var(--couleur-danger); color: white; }
   label { display: block; margin-bottom: 0.25rem; font-weight: 600; }
   .field { margin-bottom: 1rem; }
   input[type=text], input[type=email], input[type=password],
   input[type=date], input[type=time], input[type=color], input[type=file] {
     padding: 0.4rem; width: 100%; max-width: 320px; box-sizing: border-box;
+    background: var(--couleur-surface); color: var(--couleur-texte); border: 1px solid var(--couleur-bordure);
   }
-  .errors { color: #991b1b; font-size: 0.85rem; }
+  .errors { color: var(--couleur-danger-texte); font-size: 0.85rem; }
   .course-color { display: inline-block; width: 0.9rem; height: 0.9rem; border-radius: 50%;
                   margin-right: 0.4rem; vertical-align: middle; }
 </style>

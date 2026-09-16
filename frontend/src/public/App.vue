@@ -203,8 +203,8 @@ onUnmounted(() => {
   padding: 0.4rem 0.7rem;
   border: none;
   border-radius: 6px;
-  background: rgba(15, 23, 42, 0.85);
-  color: white;
+  background: var(--couleur-chrome-fond-survol);
+  color: var(--couleur-chrome-texte);
   font: inherit;
   font-size: 0.8rem;
   cursor: pointer;
@@ -222,7 +222,8 @@ onUnmounted(() => {
 }
 
 .bouton-suivre.actif {
-  background: #1d4ed8;
+  background: var(--couleur-accent);
+  color: var(--couleur-accent-texte);
 }
 
 .bouton-lecture {

@@ -36,8 +36,9 @@ const suivant = computed(() => prochainPoi(store.poisActifs, store.distanceM));
 <style scoped>
 .encart-info {
   padding: 0.5rem 1rem;
-  background: white;
-  border-top: 1px solid #e2e8f0;
+  background: var(--couleur-surface);
+  color: var(--couleur-texte);
+  border-top: 1px solid var(--couleur-bordure);
   font-size: 0.9rem;
 }
 
@@ -48,7 +49,7 @@ const suivant = computed(() => prochainPoi(store.poisActifs, store.distanceM));
 }
 
 .message-passage {
-  color: #b45309;
+  color: var(--couleur-alerte-texte);
   font-weight: 600;
 }
 

@@ -5,15 +5,17 @@
 {% block head %}
 <style>
   body { font-family: system-ui, sans-serif; display: flex; min-height: 100vh;
-         align-items: center; justify-content: center; margin: 0; background: #0f172a; }
-  form { background: white; padding: 2rem; border-radius: 8px; width: 100%; max-width: 320px; }
+         align-items: center; justify-content: center; margin: 0; background: var(--couleur-fond); }
+  form { background: var(--couleur-surface); color: var(--couleur-texte); padding: 2rem;
+         border-radius: 8px; width: 100%; max-width: 320px; }
   h1 { font-size: 1.1rem; margin-top: 0; }
   label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
-  input { width: 100%; padding: 0.5rem; margin-bottom: 1rem; box-sizing: border-box; }
-  button { width: 100%; padding: 0.6rem; background: #1d4ed8; color: white; border: none;
+  input { width: 100%; padding: 0.5rem; margin-bottom: 1rem; box-sizing: border-box;
+          background: var(--couleur-surface-alt); color: var(--couleur-texte); border: 1px solid var(--couleur-bordure); }
+  button { width: 100%; padding: 0.6rem; background: var(--couleur-accent); color: var(--couleur-accent-texte); border: none;
            border-radius: 4px; cursor: pointer; font: inherit; }
-  .flash-error { color: #991b1b; margin-bottom: 1rem; }
-  .errors { color: #991b1b; font-size: 0.85rem; }
+  .flash-error { color: var(--couleur-danger-texte); margin-bottom: 1rem; }
+  .errors { color: var(--couleur-danger-texte); font-size: 0.85rem; }
 </style>
 {% endblock %}
 

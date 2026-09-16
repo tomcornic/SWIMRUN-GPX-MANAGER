@@ -23,9 +23,10 @@ const aDesPassagesMultiples = computed(() => (store.courseActive?.passagesMultip
 <style scoped>
 .legende {
   padding: 0.4rem 1rem;
-  background: white;
+  background: var(--couleur-surface);
+  color: var(--couleur-texte);
   font-size: 0.8rem;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--couleur-bordure);
 }
 
 summary {
@@ -52,10 +53,10 @@ li {
 }
 
 .ligne.run {
-  background: #16a34a;
+  background: var(--couleur-run);
 }
 
 .ligne.swim {
-  background: #0284c7;
+  background: var(--couleur-swim);
 }
 </style>

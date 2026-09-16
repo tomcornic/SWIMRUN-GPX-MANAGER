@@ -60,7 +60,7 @@ function onInput(event: Event): void {
 <style scoped>
 .slider-km {
   padding: 0.5rem 1rem;
-  background: white;
+  background: var(--couleur-surface);
 }
 
 .bande {
@@ -73,11 +73,11 @@ function onInput(event: Event): void {
 }
 
 .segment.run {
-  background: #16a34a;
+  background: var(--couleur-run);
 }
 
 .segment.swim {
-  background: #0284c7;
+  background: var(--couleur-swim);
 }
 
 .repere-poi {
@@ -85,7 +85,7 @@ function onInput(event: Event): void {
   top: -2px;
   width: 3px;
   height: 12px;
-  background: #f97316;
+  background: var(--couleur-poi);
   transform: translateX(-50%);
 }
 

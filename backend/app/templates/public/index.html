@@ -13,16 +13,17 @@
 
   <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='img/favicon.jpg') }}">
 
+  <link rel="stylesheet" href="{{ theme_css_href() }}">
   {% set asset = vite_asset('public') %}
   {% for href in asset.css_hrefs %}
   <link rel="stylesheet" href="{{ href }}">
   {% endfor %}
   <style>
     html, body, #app { height: 100%; margin: 0; }
-    body { font-family: system-ui, sans-serif; }
+    body { font-family: system-ui, sans-serif; background: var(--couleur-fond); color: var(--couleur-texte); }
   </style>
 </head>
-<body>
+<body data-theme="plage">
   <div id="app"></div>
   {% if asset.dev %}
   <script type="module" src="{{ asset.client_src }}"></script>
