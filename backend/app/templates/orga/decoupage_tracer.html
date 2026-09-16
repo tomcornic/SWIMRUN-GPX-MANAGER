@@ -1,0 +1,30 @@
+{% extends "orga/_layout.html" %}
+{% set asset = vite_asset('orga') %}
+
+{% block title %}Découper un tracé — {{ course.name }}{% endblock %}
+
+{% block orga_head %}
+  {% for href in asset.css_hrefs %}
+  <link rel="stylesheet" href="{{ href }}">
+  {% endfor %}
+{% endblock %}
+
+{% block orga_content %}
+<h1>Découper un tracé complet — {{ course.name }}</h1>
+
+<form method="post" action="{{ url_for('orga.course_decoupage_valider', course_id=course.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" id="decoupage-json" name="decoupage_json" value="">
+  <div
+    id="decoupage-map-app"
+    data-source-url="{{ url_for('orga.course_decoupage_source_geojson', course_id=course.id) }}"
+    data-hidden-input="decoupage-json"
+  ></div>
+  <button class="btn" type="submit">Découper et prévisualiser</button>
+</form>
+
+<p><a href="{{ url_for('orga.course_decoupage', course_id=course.id) }}">&larr; Recommencer avec un autre fichier</a></p>
+
+{% if asset.dev %}<script type="module" src="{{ asset.client_src }}"></script>{% endif %}
+<script type="module" src="{{ asset.script_src }}"></script>
+{% endblock %}

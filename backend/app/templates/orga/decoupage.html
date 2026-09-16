@@ -1,0 +1,21 @@
+{% extends "orga/_layout.html" %}
+
+{% block title %}Découper un tracé — {{ course.name }}{% endblock %}
+
+{% block orga_content %}
+<h1>Découper un tracé complet — {{ course.name }}</h1>
+<p>
+  Pour une course enregistrée d'un seul tenant (pas de fichier GPX séparé par tronçon) :
+  uploadez ici le tracé complet, vous placerez ensuite les points de transition
+  course à pied / natation directement sur la carte.
+</p>
+<form method="post" enctype="multipart/form-data">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="field">
+    <label for="fichier">Fichier GPX complet</label>
+    <input type="file" id="fichier" name="fichier" accept=".gpx" required>
+  </div>
+  <button class="btn" type="submit">Continuer</button>
+</form>
+<p><a href="{{ url_for('orga.course_import', course_id=course.id) }}">&larr; Import par tronçons séparés</a></p>
+{% endblock %}

@@ -13,6 +13,9 @@ from app.core.gpx_import import (
     TronconImportResult,
     assemble_course,
     import_troncon_file,
+    parse_gpx_points,
+    points_to_gpx,
+    split_points_at_distances,
 )
 from app.core.overlaps import detect_multiple_passages
 from app.core.pace import format_mmss, parse_mmss
@@ -192,6 +195,10 @@ def _upload_dir(course_id: int) -> Path:
     return Path(current_app.config["UPLOADS_DIR"]) / f"course_{course_id}"
 
 
+def _decoupage_source_path(course_id: int) -> Path:
+    return Path(current_app.config["UPLOADS_DIR"]) / f"course_{course_id}_decoupage" / "source.gpx"
+
+
 def _run_import_preview(course_id: int) -> tuple[list[TronconImportResult], CourseAssemblyResult]:
     """Importe tous les GPX en attente pour cette course et les assemble.
 
@@ -287,6 +294,110 @@ def course_import_valider(course_id: int):
     shutil.rmtree(upload_dir)
     flash(f"{len(by_number)} tronçon(s) importé(s) pour « {course.name} ».", "success")
     return redirect(url_for("orga.index"))
+
+
+@bp.route("/courses/<int:course_id>/decoupage", methods=["GET", "POST"])
+@login_required
+def course_decoupage(course_id: int):
+    """Point d'entrée du découpage manuel : un unique GPX couvrant toute la course (pas encore
+    séparé en tronçons), à découper en plaçant des points de coupure sur la carte — voir la
+    décision dans CLAUDE.md (approche manuelle, pas de détection automatique par vitesse/marée)."""
+    course = db.get_or_404(Course, course_id)
+
+    if request.method == "POST":
+        uploaded = request.files.get("fichier")
+        if not uploaded or not uploaded.filename:
+            flash("Sélectionnez un fichier GPX.", "error")
+            return redirect(url_for("orga.course_decoupage", course_id=course.id))
+
+        try:
+            points = parse_gpx_points(uploaded.read().decode("utf-8"))
+        except Exception as exc:  # gpxpy peut lever plusieurs types d'exceptions XML
+            flash(f"Fichier GPX illisible : {exc}", "error")
+            return redirect(url_for("orga.course_decoupage", course_id=course.id))
+        if len(points) < 2:
+            flash("Ce GPX ne contient pas assez de points pour être découpé.", "error")
+            return redirect(url_for("orga.course_decoupage", course_id=course.id))
+
+        source_path = _decoupage_source_path(course.id)
+        source_path.parent.mkdir(parents=True, exist_ok=True)
+        source_path.write_text(points_to_gpx(points))
+
+        return redirect(url_for("orga.course_decoupage_tracer", course_id=course.id))
+
+    return render_template("orga/decoupage.html", course=course)
+
+
+@bp.route("/courses/<int:course_id>/decoupage/tracer")
+@login_required
+def course_decoupage_tracer(course_id: int):
+    course = db.get_or_404(Course, course_id)
+    if not _decoupage_source_path(course.id).exists():
+        flash("Importez d'abord un GPX complet à découper.", "error")
+        return redirect(url_for("orga.course_decoupage", course_id=course.id))
+    return render_template("orga/decoupage_tracer.html", course=course)
+
+
+@bp.route("/courses/<int:course_id>/decoupage/source.geojson")
+@login_required
+def course_decoupage_source_geojson(course_id: int):
+    source_path = _decoupage_source_path(course_id)
+    if not source_path.exists():
+        return jsonify({"error": "not_found"}), 404
+    points = parse_gpx_points(source_path.read_text())
+    return jsonify(
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [[lon, lat] for lat, lon in points],
+            },
+            "properties": {},
+        }
+    )
+
+
+@bp.route("/courses/<int:course_id>/decoupage/valider", methods=["POST"])
+@login_required
+def course_decoupage_valider(course_id: int):
+    course = db.get_or_404(Course, course_id)
+    source_path = _decoupage_source_path(course.id)
+    if not source_path.exists():
+        flash("Aucun découpage en attente pour cette course.", "error")
+        return redirect(url_for("orga.course_decoupage", course_id=course.id))
+
+    try:
+        payload = json.loads(request.form.get("decoupage_json", "{}"))
+        cuts_m = [float(c) for c in payload.get("cuts_m", [])]
+        types = [str(t) for t in payload.get("types", [])]
+    except (ValueError, TypeError):
+        flash("Découpage invalide : réessayez.", "error")
+        return redirect(url_for("orga.course_decoupage_tracer", course_id=course.id))
+
+    if len(types) != len(cuts_m) + 1 or any(t not in ("run", "swim") for t in types):
+        flash("Chaque segment doit avoir un type (course à pied ou natation).", "error")
+        return redirect(url_for("orga.course_decoupage_tracer", course_id=course.id))
+
+    points = parse_gpx_points(source_path.read_text())
+    try:
+        segments = split_points_at_distances(points, cuts_m)
+    except ValueError as exc:
+        flash(f"Découpage invalide : {exc}", "error")
+        return redirect(url_for("orga.course_decoupage_tracer", course_id=course.id))
+
+    upload_dir = _upload_dir(course.id)
+    if upload_dir.exists():
+        shutil.rmtree(upload_dir)
+    upload_dir.mkdir(parents=True)
+    # Le numéro de course dans le nom (`Course1_...`) ne sert qu'à documenter l'origine du
+    # fichier, jamais à identifier la course réelle — voir la décision dans CLAUDE.md.
+    for number, (segment_points, segment_type) in enumerate(zip(segments, types), start=1):
+        label = "Run" if segment_type == "run" else "Swim"
+        filename = f"Course1_Tronçon{number}_{label}.gpx"
+        (upload_dir / filename).write_text(points_to_gpx(segment_points))
+
+    shutil.rmtree(source_path.parent)
+    return redirect(url_for("orga.course_import_apercu", course_id=course.id))
 
 
 @bp.route("/courses/<int:course_id>/trace.geojson")

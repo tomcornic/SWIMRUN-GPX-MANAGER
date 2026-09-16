@@ -1,4 +1,13 @@
-from app.core.gpx_import import assemble_course, import_troncon_file
+import pytest
+
+from app.core.geometry import cumulative_distances_m
+from app.core.gpx_import import (
+    assemble_course,
+    import_troncon_file,
+    parse_gpx_points,
+    points_to_gpx,
+    split_points_at_distances,
+)
 
 VALID_TRACK_GPX = """<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="test" xmlns="http://www.topografix.com/GPX/1/1">
@@ -134,3 +143,68 @@ def test_assemble_course_warns_on_large_gap_between_troncons():
 
     assert result.status == "avertissement"
     assert any("Écart" in m for m in result.messages)
+
+
+def test_parse_gpx_points_returns_deduped_points():
+    assert parse_gpx_points(VALID_TRACK_GPX) == [
+        (48.5650, -4.5960),
+        (48.5651, -4.5961),
+        (48.5652, -4.5962),
+    ]
+
+
+# Tracé rectiligne de 4 points espacés d'environ 111 m (0,001° de latitude), soit ~333 m au total.
+STRAIGHT_LINE = [(48.0 + i * 0.001, -4.5) for i in range(4)]
+
+
+def test_split_without_cuts_returns_single_segment():
+    segments = split_points_at_distances(STRAIGHT_LINE, [])
+    assert segments == [STRAIGHT_LINE]
+
+
+def test_split_at_one_cut_produces_two_contiguous_segments():
+    total = cumulative_distances_m(STRAIGHT_LINE)[-1]
+    segments = split_points_at_distances(STRAIGHT_LINE, [total / 2])
+
+    assert len(segments) == 2
+    # Le point de coupure est partagé : fin du premier segment == début du second.
+    assert segments[0][-1] == segments[1][0]
+    # Aucun point d'origine perdu au passage (hormis la duplication du point de coupure).
+    assert segments[0][0] == STRAIGHT_LINE[0]
+    assert segments[1][-1] == STRAIGHT_LINE[-1]
+
+    d0 = cumulative_distances_m(segments[0])[-1]
+    d1 = cumulative_distances_m(segments[1])[-1]
+    assert d0 == pytest.approx(total / 2, abs=1.0)
+    assert d0 + d1 == pytest.approx(total, abs=1.0)
+
+
+def test_split_at_two_cuts_produces_three_segments_in_order():
+    total = cumulative_distances_m(STRAIGHT_LINE)[-1]
+    segments = split_points_at_distances(STRAIGHT_LINE, [total * 0.7, total * 0.3])
+
+    assert len(segments) == 3
+    assert segments[0][-1] == segments[1][0]
+    assert segments[1][-1] == segments[2][0]
+
+
+def test_split_rejects_cut_outside_track():
+    total = cumulative_distances_m(STRAIGHT_LINE)[-1]
+    with pytest.raises(ValueError, match="hors du tracé"):
+        split_points_at_distances(STRAIGHT_LINE, [total + 10])
+
+
+def test_split_rejects_duplicate_cut_distance():
+    total = cumulative_distances_m(STRAIGHT_LINE)[-1]
+    with pytest.raises(ValueError, match="même distance"):
+        split_points_at_distances(STRAIGHT_LINE, [total / 2, total / 2])
+
+
+def test_split_requires_at_least_two_points():
+    with pytest.raises(ValueError, match="au moins 2 points"):
+        split_points_at_distances([(48.0, -4.5)], [10.0])
+
+
+def test_points_to_gpx_roundtrips_through_parse_gpx_points():
+    xml = points_to_gpx(STRAIGHT_LINE)
+    assert parse_gpx_points(xml) == STRAIGHT_LINE

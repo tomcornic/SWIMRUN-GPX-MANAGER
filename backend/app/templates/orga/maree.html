@@ -37,11 +37,13 @@
     et du lendemain pour couvrir les bords de la plage horaire simulée.</em></p>
   <form method="post" action="{{ url_for('orga.maree_ajouter') }}" novalidate>
     {{ releve_form.hidden_tag() }}
-    <div class="field">{{ releve_form.date.label }} {{ releve_form.date() }}</div>
-    <div class="field">{{ releve_form.heure.label }} {{ releve_form.heure() }}</div>
-    <div class="field">{{ releve_form.hauteur_m.label }} {{ releve_form.hauteur_m() }}</div>
-    <div class="field">{{ releve_form.type.label }} {{ releve_form.type() }}</div>
-    <div class="field">{{ releve_form.fuseau_source.label }} {{ releve_form.fuseau_source() }}</div>
+    <div class="grille-champs">
+      <div class="field">{{ releve_form.date.label }} {{ releve_form.date() }}</div>
+      <div class="field">{{ releve_form.heure.label }} {{ releve_form.heure() }}</div>
+      <div class="field">{{ releve_form.hauteur_m.label }} {{ releve_form.hauteur_m() }}</div>
+      <div class="field">{{ releve_form.type.label }} {{ releve_form.type() }}</div>
+      <div class="field">{{ releve_form.fuseau_source.label }} {{ releve_form.fuseau_source() }}</div>
+    </div>
     <button class="btn" type="submit">Ajouter</button>
   </form>
 

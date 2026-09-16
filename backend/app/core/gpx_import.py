@@ -210,3 +210,77 @@ def assemble_course(
     return CourseAssemblyResult(
         course=course, track=track, troncon_results=course_results, status=status, messages=messages
     )
+
+
+def parse_gpx_points(gpx_content: str) -> list[tuple[float, float]]:
+    """Parse un GPX complet (pas encore découpé en tronçons) et renvoie ses points (lat, lon),
+    dédupliqués comme pour un tronçon classique. Lève une exception gpxpy si le XML est
+    invalide, à charge de l'appelant (voir la route de découpage, `core/gpx_import.py`
+    décision dans CLAUDE.md)."""
+    gpx = gpxpy.parse(gpx_content)
+    return _dedupe_consecutive(_read_raw_points(gpx))
+
+
+def split_points_at_distances(
+    points: list[tuple[float, float]], cut_distances_m: list[float]
+) -> list[list[tuple[float, float]]]:
+    """Découpe un tracé continu en segments contigus, à des distances cumulées croissantes
+    données (en mètres depuis le premier point).
+
+    Insère à chaque coupure un point interpolé exact, partagé entre la fin d'un segment et le
+    début du suivant : les segments résultants s'enchaînent donc sans écart (comme des tronçons
+    normalement issus de fichiers GPX distincts mais dont la fin/le début coïncident). C'est la
+    base de l'écran de découpage manuel d'un unique GPX complet en tronçons Run/Swim (voir la
+    décision dans CLAUDE.md : approche purement manuelle, pas de détection automatique).
+    """
+    if len(points) < 2:
+        raise ValueError("Le tracé doit contenir au moins 2 points pour être découpé.")
+    if not cut_distances_m:
+        return [list(points)]
+
+    distances = cumulative_distances_m(points)
+    total = distances[-1]
+
+    sorted_cuts = sorted(cut_distances_m)
+    if len(set(sorted_cuts)) != len(sorted_cuts):
+        raise ValueError("Deux points de coupure ne peuvent pas être à la même distance.")
+    for cut in sorted_cuts:
+        if not (0 < cut < total):
+            raise ValueError(
+                f"Point de coupure à {cut:.0f} m hors du tracé (longueur totale {total:.0f} m)."
+            )
+
+    segments: list[list[tuple[float, float]]] = []
+    current: list[tuple[float, float]] = [points[0]]
+    idx = 0
+    for cut in sorted_cuts:
+        while idx < len(points) - 2 and distances[idx + 1] < cut:
+            idx += 1
+            current.append(points[idx])
+        lat1, lon1 = points[idx]
+        lat2, lon2 = points[idx + 1]
+        d1, d2 = distances[idx], distances[idx + 1]
+        ratio = 0.0 if d2 == d1 else (cut - d1) / (d2 - d1)
+        cut_point = (lat1 + (lat2 - lat1) * ratio, lon1 + (lon2 - lon1) * ratio)
+        current.append(cut_point)
+        segments.append(current)
+        current = [cut_point]
+    while idx < len(points) - 1:
+        idx += 1
+        current.append(points[idx])
+    segments.append(current)
+    return segments
+
+
+def points_to_gpx(points: list[tuple[float, float]]) -> str:
+    """Sérialise des points (lat, lon) en GPX minimal, pour réécrire les segments issus de
+    split_points_at_distances comme des fichiers de tronçon normaux (réutilisés tels quels par
+    le pipeline d'import existant — voir la route de découpage)."""
+    gpx = gpxpy.gpx.GPX()
+    track = gpxpy.gpx.GPXTrack()
+    gpx.tracks.append(track)
+    segment = gpxpy.gpx.GPXTrackSegment()
+    track.segments.append(segment)
+    for lat, lon in points:
+        segment.points.append(gpxpy.gpx.GPXTrackPoint(lat, lon))
+    return gpx.to_xml()

@@ -3,6 +3,7 @@ import { createApp } from "vue";
 
 import "../shared/base.css";
 import App from "./App.vue";
+import DecoupageMapPicker from "./components/DecoupageMapPicker.vue";
 import PoiMapPicker from "./components/PoiMapPicker.vue";
 
 if (document.getElementById("app")) {
@@ -19,4 +20,12 @@ if (poiMapEl) {
     latInitial: latInitial ? Number(latInitial) : undefined,
     lonInitial: lonInitial ? Number(lonInitial) : undefined,
   }).mount(poiMapEl);
+}
+
+const decoupageMapEl = document.getElementById("decoupage-map-app");
+if (decoupageMapEl) {
+  createApp(DecoupageMapPicker, {
+    sourceUrl: decoupageMapEl.dataset.sourceUrl,
+    hiddenInputId: decoupageMapEl.dataset.hiddenInput,
+  }).mount(decoupageMapEl);
 }

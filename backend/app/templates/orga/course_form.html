@@ -24,14 +24,16 @@
 
   <h2>Allures (facultatif à la création, nécessaire pour la simulation)</h2>
   <p><em>Format mm:ss — course à pied par km, natation par 100 m.</em></p>
-  {% for field in (form.premier_allure_course, form.premier_allure_nage,
-                    form.dernier_allure_course, form.dernier_allure_nage) %}
-  <div class="field">
-    {{ field.label }}
-    {{ field(placeholder="mm:ss") }}
-    {% for error in field.errors %}<div class="errors">{{ error }}</div>{% endfor %}
+  <div class="grille-champs">
+    {% for field in (form.premier_allure_course, form.premier_allure_nage,
+                      form.dernier_allure_course, form.dernier_allure_nage) %}
+    <div class="field">
+      {{ field.label }}
+      {{ field(placeholder="mm:ss") }}
+      {% for error in field.errors %}<div class="errors">{{ error }}</div>{% endfor %}
+    </div>
+    {% endfor %}
   </div>
-  {% endfor %}
 
   <button class="btn" type="submit">Enregistrer</button>
 </form>

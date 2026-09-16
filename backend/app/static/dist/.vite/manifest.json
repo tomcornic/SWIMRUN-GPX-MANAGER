@@ -1,46 +1,68 @@
 {
-  "__plugin-vue_export-helper-BgeRI3US.js": {
-    "file": "assets/_plugin-vue_export-helper-BgeRI3US.js",
+  "__plugin-vue_export-helper-BsiEVyeR.css": {
+    "file": "assets/_plugin-vue_export-helper-BsiEVyeR.css",
+    "src": "__plugin-vue_export-helper-BsiEVyeR.css"
+  },
+  "__plugin-vue_export-helper-w9CDszSH.js": {
+    "file": "assets/_plugin-vue_export-helper-w9CDszSH.js",
     "name": "_plugin-vue_export-helper",
     "css": [
       "assets/_plugin-vue_export-helper-BsiEVyeR.css"
     ]
   },
-  "__plugin-vue_export-helper-BsiEVyeR.css": {
-    "file": "assets/_plugin-vue_export-helper-BsiEVyeR.css",
-    "src": "__plugin-vue_export-helper-BsiEVyeR.css"
+  "node_modules/@fontsource-variable/baloo-2/files/baloo-2-latin-ext-wght-normal.woff2": {
+    "file": "assets/baloo-2-latin-ext-wght-normal-Dz43yst_.woff2",
+    "src": "node_modules/@fontsource-variable/baloo-2/files/baloo-2-latin-ext-wght-normal.woff2"
+  },
+  "node_modules/@fontsource-variable/baloo-2/files/baloo-2-latin-wght-normal.woff2": {
+    "file": "assets/baloo-2-latin-wght-normal-B_TVFhwJ.woff2",
+    "src": "node_modules/@fontsource-variable/baloo-2/files/baloo-2-latin-wght-normal.woff2"
+  },
+  "node_modules/@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2": {
+    "file": "assets/inter-latin-ext-wght-normal-DO1Apj_S.woff2",
+    "src": "node_modules/@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2"
+  },
+  "node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2": {
+    "file": "assets/inter-latin-wght-normal-Dx4kXJAl.woff2",
+    "src": "node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2"
   },
   "src/orga/main.ts": {
-    "file": "assets/orga-a3BEKWgU.js",
+    "file": "assets/orga-D4vjx8yf.js",
     "name": "orga",
     "src": "src/orga/main.ts",
     "isEntry": true,
     "imports": [
-      "__plugin-vue_export-helper-BgeRI3US.js"
+      "__plugin-vue_export-helper-w9CDszSH.js"
     ],
     "css": [
-      "assets/orga-B2hT5SoP.css"
+      "assets/orga-PgyRsTSF.css"
     ]
   },
   "src/public/main.ts": {
-    "file": "assets/public-DiBe0C0K.js",
+    "file": "assets/public-DnTpYjs6.js",
     "name": "public",
     "src": "src/public/main.ts",
     "isEntry": true,
     "imports": [
-      "__plugin-vue_export-helper-BgeRI3US.js"
+      "__plugin-vue_export-helper-w9CDszSH.js"
     ],
     "css": [
       "assets/public-CD7Nb-sf.css"
     ]
   },
   "src/shared/theme.css": {
-    "file": "assets/theme-CumNQk3r.css",
+    "file": "assets/theme-D6WGtJIx.css",
     "name": "theme",
     "names": [
       "theme.css"
     ],
     "src": "src/shared/theme.css",
-    "isEntry": true
+    "isEntry": true,
+    "assets": [
+      "assets/inter-latin-wght-normal-Dx4kXJAl.woff2",
+      "assets/inter-latin-ext-wght-normal-DO1Apj_S.woff2",
+      "assets/baloo-2-latin-wght-normal-B_TVFhwJ.woff2",
+      "assets/baloo-2-latin-ext-wght-normal-Dz43yst_.woff2"
+    ]
   }
 }

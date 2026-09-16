@@ -5,9 +5,18 @@
    - [data-theme="plage"]  : site public (/), ambiance jour/plage, fond crème.
    - [data-theme="veille"] : interface organisateur (/orga), fond bleu nuit, pensé usage terrain
      jour J (forte lisibilité en extérieur / de nuit).
-*/
+
+   Polices auto-hébergées (§2 : pas de CDN Google Fonts), voir fonts.css pour le détail des
+   sous-ensembles retenus (latin/latin-ext seulement) et pourquoi. */
+@import "./fonts.css";
 
 :root {
+  /* Baloo 2 : titres de page — reprend l'esprit rond et jovial du logo/affiche de l'événement.
+     Inter : texte courant — grande lisibilité, y compris les chiffres (allures, distances,
+     heures), prioritaire sur le ton « convivial » d'après le cahier des charges (§2). */
+  --police-titre: "Baloo 2 Variable", ui-rounded, "Comic Sans MS", sans-serif;
+  --police-texte: "Inter Variable", system-ui, -apple-system, sans-serif;
+
   /* Couleurs de marque brutes */
   --marque-creme: #fdfaf3;
   --marque-bleu-acier: #3f6d90;
@@ -95,4 +104,13 @@
 
   --ombre: 0 1px 4px rgba(0, 0, 0, 0.45);
   --ombre-forte: 0 -2px 12px rgba(0, 0, 0, 0.5);
+}
+
+body {
+  font-family: var(--police-texte);
+}
+
+h1 {
+  font-family: var(--police-titre);
+  font-weight: 700;
 }

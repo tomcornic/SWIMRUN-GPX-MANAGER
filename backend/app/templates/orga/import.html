@@ -17,4 +17,9 @@
   </div>
   <button class="btn" type="submit">Aperçu de l'import</button>
 </form>
+<p>
+  <em>Un seul GPX qui couvre toute la course, pas encore découpé en tronçons ?
+  <a href="{{ url_for('orga.course_decoupage', course_id=course.id) }}">Découper un tracé complet</a>
+  à la place.</em>
+</p>
 {% endblock %}
