@@ -64,6 +64,17 @@ export function createSatelliteMap(container: HTMLElement): MaplibreMap {
   map.addControl(new NavigationControl(), "top-right");
   map.addControl(new AttributionControl({ compact: true }), "bottom-right");
 
+  /**
+   * Sur Safari/WebKit, le chargement asynchrone des polices auto-hébergées (fontsource, voir
+   * CLAUDE.md P7) peut légèrement modifier la mise en page autour de la carte après le premier
+   * rendu sans que le ResizeObserver interne de maplibre-gl ne redéclenche un resize à temps —
+   * contrairement à Chrome/Firefox, où ça se corrige tout seul. Un `resize()` explicite à la
+   * frame suivante et une fois les polices chargées corrige le canvas WebGL mal dimensionné
+   * (rendu confiné à un petit coin du conteneur) sans dépendre de ce timing.
+   */
+  requestAnimationFrame(() => map.resize());
+  void document.fonts?.ready?.then(() => map.resize());
+
   return map;
 }
 
