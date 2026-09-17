@@ -31,6 +31,17 @@ export const ID_COUCHE_SATELLITE = "ign-ortho-layer";
 export const ID_COUCHE_PLAN = "osm-plan-layer";
 export type FondCarte = "satellite" | "plan";
 
+/**
+ * L'évènement "load" de maplibre-gl ne se déclenche qu'une fois dans toute la vie de la carte.
+ * `map.loaded()` n'est PAS un indicateur fiable pour savoir s'il s'est déjà produit : cette
+ * méthode redevient `false` dès que la carte recharge des tuiles en arrière-plan (zoom/pan),
+ * bien après le premier chargement — s'y fier dans `surCarteChargee()` pouvait donc réabonner à
+ * "load" alors que l'évènement était déjà passé depuis longtemps, et le callback n'était alors
+ * plus jamais appelé (aucune erreur, juste plus rien ne s'affichait). On mémorise donc nous-mêmes,
+ * une fois pour toutes, si "load" s'est déjà produit pour cette carte précise.
+ */
+const cartesChargees = new WeakSet<MaplibreMap>();
+
 export function createSatelliteMap(container: HTMLElement): MaplibreMap {
   const map = new MaplibreMap({
     container,
@@ -63,6 +74,7 @@ export function createSatelliteMap(container: HTMLElement): MaplibreMap {
 
   map.addControl(new NavigationControl(), "top-right");
   map.addControl(new AttributionControl({ compact: true }), "bottom-right");
+  map.once("load", () => cartesChargees.add(map));
 
   /**
    * Sur Safari/WebKit, le chargement asynchrone des polices auto-hébergées (fontsource, voir
@@ -79,15 +91,12 @@ export function createSatelliteMap(container: HTMLElement): MaplibreMap {
 }
 
 /**
- * `map.on("load", cb)` ne se déclenche qu'une fois, à l'instant précis où le style/les tuiles
- * initiales finissent de charger — si on l'enregistre après avoir attendu un fetch réseau (ex.
- * `await coursesStore.charger(...)`), l'évènement a déjà pu se produire pendant l'attente et
- * `cb` ne sera alors jamais appelé (carte de base visible, mais aucun tracé/marqueur ne
- * s'affiche jamais, sans la moindre erreur). Trouvé en test réel sur PythonAnywhere, où la
- * latence réseau est bien plus marquée qu'en localhost.
+ * À appeler pour exécuter `cb` une fois que la carte a fini son chargement initial — y compris
+ * si on l'appelle après avoir attendu un fetch réseau (ex. `await coursesStore.charger(...)`)
+ * pendant lequel "load" a déjà pu se produire (voir `cartesChargees` ci-dessus).
  */
 export function surCarteChargee(map: MaplibreMap, cb: () => void): void {
-  if (map.loaded()) cb();
+  if (cartesChargees.has(map)) cb();
   else map.once("load", cb);
 }
 
