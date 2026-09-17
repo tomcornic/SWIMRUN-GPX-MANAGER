@@ -38,6 +38,7 @@ let markersParCourse = new Map<number, Marker[]>();
 let coursesRendues = new Set<number>();
 let frameId: number | null = null;
 let dernierTimestamp: number | null = null;
+let carteChargee = false;
 
 function afficherMarqueursDe(courseId: number, visible: boolean): void {
   for (const marqueur of markersParCourse.get(courseId) ?? []) {
@@ -60,20 +61,26 @@ function rendreCourse(carte: MaplibreMap, courseId: number): void {
   coursesRendues.add(courseId);
 }
 
-function synchroniserCourseActive(previousId: number | null, courseId: number | null): void {
-  if (!map || courseId === null) return;
+/**
+ * Le tracé d'une course arrive de manière asynchrone (`store.selectionnerCourse` fetch
+ * `course-{id}.geojson`), alors que `store.courseActiveId` change de façon synchrone dès le clic
+ * sur un onglet — sur un réseau lent (mobile), le rendu tenté juste après le clic trouvait
+ * systématiquement `store.courseActive` encore `null` et abandonnait sans jamais réessayer une
+ * fois les données arrivées (aucun tracé affiché en changeant d'onglet, alors que les panneaux
+ * texte/slider — branchés en réactif Vue — se mettaient bien à jour). `essaierRendreCourseActive`
+ * est appelé à chaque fois que l'une des deux conditions (carte chargée, données de la course
+ * disponibles) progresse, et ne fait rien tant que les deux ne sont pas réunies.
+ */
+function essaierRendreCourseActive(): void {
+  if (!map || !carteChargee) return;
+  const course = store.courseActive;
+  if (!course) return;
 
-  if (previousId !== null && previousId !== courseId) {
-    masquerCourse(map, previousId);
-    afficherMarqueursDe(previousId, false);
+  if (!coursesRendues.has(course.id)) {
+    rendreCourse(map, course.id);
   }
-
-  if (!coursesRendues.has(courseId)) {
-    rendreCourse(map, courseId);
-  } else {
-    afficherCourseActive(map, courseId);
-    afficherMarqueursDe(courseId, true);
-  }
+  afficherCourseActive(map, course.id);
+  afficherMarqueursDe(course.id, true);
 }
 
 function mettreAJourPosition(): void {
@@ -113,8 +120,16 @@ function basculerFond(): void {
 
 watch(
   () => store.courseActiveId,
-  (courseId, previousId) => synchroniserCourseActive(previousId ?? null, courseId)
+  (courseId, previousId) => {
+    if (map && previousId !== null && previousId !== courseId) {
+      masquerCourse(map, previousId);
+      afficherMarqueursDe(previousId, false);
+    }
+    essaierRendreCourseActive();
+  }
 );
+
+watch(() => store.courseActive, essaierRendreCourseActive);
 
 watch(() => store.distanceM, mettreAJourPosition);
 
@@ -128,15 +143,14 @@ onMounted(async () => {
   carte.on("load", async () => {
     await chargerIconeFleche(carte);
     marqueurPosition = creerMarqueurPosition(carte, store.courseActive?.couleur ?? "#1d4ed8");
+    carteChargee = true;
+    essaierRendreCourseActive();
 
-    if (store.courseActiveId !== null) {
-      synchroniserCourseActive(null, store.courseActiveId);
-      const trace = store.courseActive?.trace;
-      if (trace && trace.length > 0) {
-        carte.setCenter(trace[0]);
-      }
-      mettreAJourPosition();
+    const trace = store.courseActive?.trace;
+    if (trace && trace.length > 0) {
+      carte.setCenter(trace[0]);
     }
+    mettreAJourPosition();
 
     dernierTimestamp = performance.now();
     frameId = requestAnimationFrame(boucleLecture);
