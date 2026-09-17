@@ -78,6 +78,19 @@ export function createSatelliteMap(container: HTMLElement): MaplibreMap {
   return map;
 }
 
+/**
+ * `map.on("load", cb)` ne se déclenche qu'une fois, à l'instant précis où le style/les tuiles
+ * initiales finissent de charger — si on l'enregistre après avoir attendu un fetch réseau (ex.
+ * `await coursesStore.charger(...)`), l'évènement a déjà pu se produire pendant l'attente et
+ * `cb` ne sera alors jamais appelé (carte de base visible, mais aucun tracé/marqueur ne
+ * s'affiche jamais, sans la moindre erreur). Trouvé en test réel sur PythonAnywhere, où la
+ * latence réseau est bien plus marquée qu'en localhost.
+ */
+export function surCarteChargee(map: MaplibreMap, cb: () => void): void {
+  if (map.loaded()) cb();
+  else map.once("load", cb);
+}
+
 /** Commute entre le fond satellite (IGN) et le fond plan (OSM) — §6 : « commutateur vers une couche plan ». */
 export function definirFondCarte(map: MaplibreMap, fond: FondCarte): void {
   map.setLayoutProperty(ID_COUCHE_SATELLITE, "visibility", fond === "satellite" ? "visible" : "none");

@@ -2,7 +2,7 @@
 import type { Map as MaplibreMap, Marker } from "maplibre-gl";
 import { onMounted, onUnmounted, ref, useTemplateRef, watch } from "vue";
 
-import { createSatelliteMap, definirFondCarte, type FondCarte } from "../shared/map";
+import { createSatelliteMap, definirFondCarte, surCarteChargee, type FondCarte } from "../shared/map";
 import {
   afficherBadgesPassages,
   afficherCourseActive,
@@ -140,7 +140,7 @@ onMounted(async () => {
 
   await store.initialiser();
 
-  carte.on("load", async () => {
+  surCarteChargee(carte, async () => {
     await chargerIconeFleche(carte);
     marqueurPosition = creerMarqueurPosition(carte, store.courseActive?.couleur ?? "#1d4ed8");
     carteChargee = true;

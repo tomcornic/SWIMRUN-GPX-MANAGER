@@ -7,7 +7,7 @@ import type { Map as MaplibreMap, MapMouseEvent } from "maplibre-gl";
 import { Marker } from "maplibre-gl";
 import { onMounted, ref, useTemplateRef, watch } from "vue";
 
-import { createSatelliteMap } from "../../shared/map";
+import { createSatelliteMap, surCarteChargee } from "../../shared/map";
 
 const props = defineProps<{
   sourceUrl: string;
@@ -137,7 +137,7 @@ onMounted(async () => {
   totalDistanceM.value = length(ligneTurf, { units: "meters" });
   chargee.value = true;
 
-  carte.on("load", () => {
+  surCarteChargee(carte, () => {
     carte.addSource("decoupage-trace", { type: "geojson", data: geojson });
     carte.addLayer({
       id: "decoupage-trace-line",

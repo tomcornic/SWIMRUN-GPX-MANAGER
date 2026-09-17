@@ -2,7 +2,7 @@
 import type { Map as MaplibreMap } from "maplibre-gl";
 import { computed, onMounted, onUnmounted, useTemplateRef } from "vue";
 
-import { createSatelliteMap } from "../shared/map";
+import { createSatelliteMap, surCarteChargee } from "../shared/map";
 import { afficherMarqueurs, afficherPlage, afficherTraceDistincte } from "./carte-simulation";
 import ControlesLecture from "./components/ControlesLecture.vue";
 import GraphiqueMaree from "./components/GraphiqueMaree.vue";
@@ -73,7 +73,7 @@ onMounted(async () => {
   horloge.initialiserBornes(bornes.debutS, bornes.finS);
   await mareeStore.charger(bornes.debutS, bornes.finS);
 
-  carte.on("load", () => {
+  surCarteChargee(carte, () => {
     for (const course of coursesStore.courses) {
       if (course.traceCoordinates.length === 0) continue;
       afficherTraceDistincte(carte, course.id, course.traceCoordinates, course.course, course.couleur);
