@@ -15,7 +15,7 @@ import { computed, onMounted, onUnmounted, useTemplateRef, watch } from "vue";
 
 import { useHorlogeStore } from "../stores/horloge";
 import { useMareeStore } from "../stores/maree";
-import { formaterHMS } from "../temps";
+import { formaterHMS, graduationsS } from "../temps";
 
 Chart.register(
   CategoryScale,
@@ -88,11 +88,28 @@ function creerGraphique(): void {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      // Pas d'animation : un saut d'heure pendant l'animation d'apparition (1 s) laissait le
+      // curseur à son ancienne position, l'animation en cours réécrivant sa cible initiale
+      // par-dessus le `update("none")`. Le curseur est de toute façon redessiné à chaque image.
+      animation: false,
       onClick: onClickGraphique,
       scales: {
+        // Axe borné à la plage simulée (celle de l'horloge et de la série) : sans min/max,
+        // Chart.js l'étire jusqu'aux pleines/basses mers saisies, souvent à plusieurs heures de
+        // la course, et la courbe utile n'occupe plus qu'une fraction de la largeur.
         x: {
           type: "linear",
-          ticks: { color: cssVar("--couleur-texte-att"), callback: (valeur) => formaterHMS(Number(valeur)).slice(0, 5) },
+          min: horloge.borneDebutS,
+          max: horloge.borneFinS,
+          // Graduations imposées : avec min et max fixés, Chart.js n'applique pas `stepSize`
+          // tel quel (il répartit les graduations entre les bornes : 08:55, 09:16...).
+          afterBuildTicks: (axe) => {
+            axe.ticks = graduationsS(axe.min, axe.max).map((value) => ({ value }));
+          },
+          ticks: {
+            color: cssVar("--couleur-texte-att"),
+            callback: (valeur) => formaterHMS(Number(valeur)).slice(0, 5),
+          },
           grid: { color: cssVar("--couleur-bordure") },
         },
         y: {

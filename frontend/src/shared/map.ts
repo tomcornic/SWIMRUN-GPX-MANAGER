@@ -50,6 +50,9 @@ export function createSatelliteMap(container: HTMLElement): MaplibreMap {
     container,
     center: SAINT_PABU_CENTER,
     zoom: 13,
+    // Désactive l'attribution par défaut : on ajoute la nôtre (compacte) plus bas, sinon la
+    // pastille « © IGN » apparaît en double.
+    attributionControl: false,
     style: {
       version: 8,
       sources: {
