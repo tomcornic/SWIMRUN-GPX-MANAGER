@@ -1,11 +1,15 @@
 import along from "@turf/along";
 import { lineString, point } from "@turf/helpers";
-import lineSliceAlong from "@turf/line-slice-along";
-import type { Feature, Point, Position } from "geojson";
-import { Map as MaplibreMap } from "maplibre-gl";
-import type { CircleLayerSpecification, GeoJSONSource, LineLayerSpecification } from "maplibre-gl";
+import type { Feature, FeatureCollection, Point, Position } from "geojson";
+import type {
+  CircleLayerSpecification,
+  GeoJSONSource,
+  LineLayerSpecification,
+  Map as MaplibreMap,
+} from "maplibre-gl";
 
 import { segmentsParType } from "../shared/map";
+import { geojsonPlage } from "./plage-geojson";
 import type { Course } from "./simulation";
 
 const EPAISSEUR_PLAGE = 8;
@@ -14,7 +18,7 @@ function sourceId(courseId: number, suffixe: string): string {
   return `course-${courseId}-${suffixe}`;
 }
 
-function setOrCreateSource(map: MaplibreMap, id: string, data: Feature): void {
+function setOrCreateSource(map: MaplibreMap, id: string, data: Feature | FeatureCollection): void {
   const existing = map.getSource(id) as GeoJSONSource | undefined;
   if (existing) {
     existing.setData(data);
@@ -25,7 +29,7 @@ function setOrCreateSource(map: MaplibreMap, id: string, data: Feature): void {
 
 /**
  * Affiche la plage d'une course (portion du tracé entre le dernier et le premier
- * coureur) comme une bande épaisse semi-transparente, extraite avec lineSliceAlong (§5).
+ * coureur) comme une bande épaisse semi-transparente (§5).
  */
 export function afficherPlage(
   map: MaplibreMap,
@@ -38,15 +42,7 @@ export function afficherPlage(
   const id = sourceId(courseId, "plage");
   const layerId = `${id}-line`;
 
-  if (debutM === null || finM === null || ligne.length < 2 || finM <= debutM) {
-    const source = map.getSource(id) as GeoJSONSource | undefined;
-    source?.setData(lineString([]));
-    return;
-  }
-
-  const complet = lineString(ligne);
-  const tranche = lineSliceAlong(complet, debutM, finM, { units: "meters" });
-  setOrCreateSource(map, id, tranche);
+  setOrCreateSource(map, id, geojsonPlage(ligne, debutM, finM));
 
   if (!map.getLayer(layerId)) {
     const layer: LineLayerSpecification = {

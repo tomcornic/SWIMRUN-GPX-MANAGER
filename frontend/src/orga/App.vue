@@ -38,10 +38,15 @@ function mettreAJourCarte(): void {
   if (!map) return;
   for (const course of coursesStore.courses) {
     if (!course.allure || course.traceCoordinates.length === 0) continue;
-    const t = horloge.tempsS - course.departS;
-    const plage = plageAt(course.course, course.allure, t);
-    afficherPlage(map, course.id, course.traceCoordinates, course.couleur, plage.debutM, plage.finM);
-    afficherMarqueurs(map, course.id, course.traceCoordinates, course.couleur, plage.debutM, plage.finM);
+    // Un try/catch par course : une erreur sur l'une ne doit pas figer l'affichage des suivantes.
+    try {
+      const t = horloge.tempsS - course.departS;
+      const plage = plageAt(course.course, course.allure, t);
+      afficherPlage(map, course.id, course.traceCoordinates, course.couleur, plage.debutM, plage.finM);
+      afficherMarqueurs(map, course.id, course.traceCoordinates, course.couleur, plage.debutM, plage.finM);
+    } catch (erreur) {
+      console.error(`Erreur d'affichage de la course « ${course.nom} » :`, erreur);
+    }
   }
 }
 
