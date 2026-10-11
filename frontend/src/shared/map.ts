@@ -32,15 +32,18 @@ export const ID_COUCHE_PLAN = "osm-plan-layer";
 export type FondCarte = "satellite" | "plan";
 
 /**
- * L'évènement "load" de maplibre-gl ne se déclenche qu'une fois dans toute la vie de la carte.
- * `map.loaded()` n'est PAS un indicateur fiable pour savoir s'il s'est déjà produit : cette
- * méthode redevient `false` dès que la carte recharge des tuiles en arrière-plan (zoom/pan),
- * bien après le premier chargement — s'y fier dans `surCarteChargee()` pouvait donc réabonner à
- * "load" alors que l'évènement était déjà passé depuis longtemps, et le callback n'était alors
- * plus jamais appelé (aucune erreur, juste plus rien ne s'affichait). On mémorise donc nous-mêmes,
- * une fois pour toutes, si "load" s'est déjà produit pour cette carte précise.
+ * On attend "style.load" (style prêt : `addSource`/`addLayer` autorisés), surtout pas "load" :
+ * "load" ne se déclenche qu'une fois TOUTES les tuiles du fond visibles chargées ou en erreur,
+ * donc une seule tuile IGN lente ou sans réponse suffisait à ne jamais afficher le tracé (aucune
+ * erreur en console, juste une carte sans parcours) — alors que le tracé ne dépend en rien du
+ * fond satellite.
+ *
+ * L'évènement ne se déclenche qu'une fois (le style n'est jamais remplacé), et ni `map.loaded()`
+ * ni `map.isStyleLoaded()` ne permettent de savoir après coup s'il est déjà passé : les deux
+ * redeviennent `false` dès que la carte recharge des tuiles (zoom/pan). On le mémorise donc
+ * nous-mêmes, une fois pour toutes, pour cette carte précise.
  */
-const cartesChargees = new WeakSet<MaplibreMap>();
+const cartesPretes = new WeakSet<MaplibreMap>();
 
 export function createSatelliteMap(container: HTMLElement): MaplibreMap {
   const map = new MaplibreMap({
@@ -74,7 +77,7 @@ export function createSatelliteMap(container: HTMLElement): MaplibreMap {
 
   map.addControl(new NavigationControl(), "top-right");
   map.addControl(new AttributionControl({ compact: true }), "bottom-right");
-  map.once("load", () => cartesChargees.add(map));
+  map.once("style.load", () => cartesPretes.add(map));
 
   /**
    * Sur Safari/WebKit, le chargement asynchrone des polices auto-hébergées (fontsource, voir
@@ -91,13 +94,14 @@ export function createSatelliteMap(container: HTMLElement): MaplibreMap {
 }
 
 /**
- * À appeler pour exécuter `cb` une fois que la carte a fini son chargement initial — y compris
- * si on l'appelle après avoir attendu un fetch réseau (ex. `await coursesStore.charger(...)`)
- * pendant lequel "load" a déjà pu se produire (voir `cartesChargees` ci-dessus).
+ * À appeler pour exécuter `cb` dès que la carte accepte des sources/couches, sans attendre les
+ * tuiles du fond — y compris si on l'appelle après avoir attendu un fetch réseau (ex.
+ * `await coursesStore.charger(...)`) pendant lequel "style.load" a déjà pu se produire (voir
+ * `cartesPretes` ci-dessus).
  */
-export function surCarteChargee(map: MaplibreMap, cb: () => void): void {
-  if (cartesChargees.has(map)) cb();
-  else map.once("load", cb);
+export function surCartePrete(map: MaplibreMap, cb: () => void): void {
+  if (cartesPretes.has(map)) cb();
+  else map.once("style.load", cb);
 }
 
 /** Commute entre le fond satellite (IGN) et le fond plan (OSM) — §6 : « commutateur vers une couche plan ». */
