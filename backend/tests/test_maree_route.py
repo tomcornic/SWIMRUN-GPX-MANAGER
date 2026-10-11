@@ -88,3 +88,20 @@ def test_maree_csv_non_utf8_message_explicite(logged_in_client, app):
     assert b"UTF-8 est attendu" in response.data
     with app.app_context():
         assert MareeReleve.query.count() == 0
+
+
+def test_maree_fuseau_par_defaut_heure_legale(logged_in_client, app):
+    """Sans toucher au champ fuseau, 06:12 saisi doit rester 06:12 heure française (04:12 UTC
+    en été), pas être interprété comme de l'UTC."""
+    _create_event(logged_in_client)
+    page = logged_in_client.get("/orga/maree").get_data(as_text=True)
+    assert page.count('<option selected value="legale">') == 2  # Option A et Option B
+
+    logged_in_client.post(
+        "/orga/maree/ajouter",
+        data={"date": "2027-07-12", "heure": "06:12", "hauteur_m": "5,80", "type": "pm"},
+        follow_redirects=True,
+    )
+    with app.app_context():
+        releve = MareeReleve.query.one()
+        assert (releve.moment_utc.hour, releve.moment_utc.minute) == (4, 12)

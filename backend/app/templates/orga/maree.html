@@ -34,7 +34,9 @@
 
   <h2>Option A — Ajouter un extrême (pleine ou basse mer)</h2>
   <p><em>À recopier depuis les tables SHOM du port choisi. Pensez aux extrêmes de la veille
-    et du lendemain pour couvrir les bords de la plage horaire simulée.</em></p>
+    et du lendemain pour couvrir les bords de la plage horaire simulée. Vérifiez le fuseau dans
+    lequel votre source exprime les heures (indiqué en tête des tables) : la liste ci-dessus
+    affiche toujours l'heure française, ce qui permet de contrôler le résultat.</em></p>
   <form method="post" action="{{ url_for('orga.maree_ajouter') }}" novalidate>
     {{ releve_form.hidden_tag() }}
     <div class="grille-champs">

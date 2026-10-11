@@ -77,10 +77,13 @@ class CourseForm(FlaskForm):
 
 
 FUSEAU_CHOICES = [
-    ("utc", "UTC"),
-    ("utc+1", "UTC+1 (fixe, sans heure d'été)"),
     ("legale", "Heure légale française (Europe/Paris)"),
+    ("utc+1", "UTC+1 (fixe, sans heure d'été)"),
+    ("utc", "UTC"),
 ]
+# Défaut = heure légale, le fuseau de l'événement et de tout le reste de l'appli : avec UTC par
+# défaut, une heure recopiée telle quelle sans toucher au champ était décalée de 2 h en été.
+FUSEAU_DEFAUT = "legale"
 
 
 class HauteurField(FloatField):
@@ -111,7 +114,9 @@ class MareeReleveForm(FlaskForm):
         "Hauteur (m)", validators=[InputRequired(message="La hauteur est requise.")]
     )
     type = SelectField("Type", choices=[("pm", "Pleine mer"), ("bm", "Basse mer")])
-    fuseau_source = SelectField("Fuseau de la table source", choices=FUSEAU_CHOICES)
+    fuseau_source = SelectField(
+        "Fuseau de la table source", choices=FUSEAU_CHOICES, default=FUSEAU_DEFAUT
+    )
 
 
 class MareeCsvForm(FlaskForm):
@@ -119,7 +124,9 @@ class MareeCsvForm(FlaskForm):
         "Fichier CSV (datetime;hauteur_m)",
         validators=[FileRequired(), FileAllowed(["csv"], "Fichier .csv attendu.")],
     )
-    fuseau_source = SelectField("Fuseau de la table source", choices=FUSEAU_CHOICES)
+    fuseau_source = SelectField(
+        "Fuseau de la table source", choices=FUSEAU_CHOICES, default=FUSEAU_DEFAUT
+    )
 
 
 POI_TYPE_CHOICES = [
