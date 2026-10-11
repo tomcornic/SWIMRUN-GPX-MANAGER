@@ -1,3 +1,5 @@
+import math
+
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileRequired
 from wtforms import (
@@ -10,7 +12,7 @@ from wtforms import (
     StringField,
     TimeField,
 )
-from wtforms.validators import DataRequired, Length, Optional, Regexp
+from wtforms.validators import DataRequired, InputRequired, Length, Optional, Regexp
 
 from app.core.pace import parse_mmss
 
@@ -81,10 +83,33 @@ FUSEAU_CHOICES = [
 ]
 
 
+class HauteurField(FloatField):
+    """Hauteur d'eau en mètres. Accepte la virgule décimale (« 5,80 »), saisie naturelle en
+    français et notation des tables SHOM — un FloatField brut la rejette."""
+
+    MESSAGE_INVALIDE = "Hauteur invalide : un nombre en mètres est attendu (ex. 5,80)."
+
+    def process_formdata(self, valuelist):
+        if not valuelist:
+            return
+        self.data = None
+        try:
+            valeur = float(valuelist[0].strip().replace(",", "."))
+        except ValueError as exc:
+            raise ValueError(self.MESSAGE_INVALIDE) from exc
+        if not math.isfinite(valeur):
+            raise ValueError(self.MESSAGE_INVALIDE)
+        self.data = valeur
+
+
 class MareeReleveForm(FlaskForm):
-    date = DateField("Date", validators=[DataRequired()])
-    heure = TimeField("Heure", validators=[DataRequired()])
-    hauteur_m = FloatField("Hauteur (m)", validators=[DataRequired()])
+    date = DateField("Date", validators=[DataRequired(message="La date est requise.")])
+    heure = TimeField("Heure", validators=[DataRequired(message="L'heure est requise.")])
+    # InputRequired et non DataRequired : ce dernier rejette 0 (valeur « fausse » en Python),
+    # alors qu'une basse mer à 0,00 m est une hauteur valide.
+    hauteur_m = HauteurField(
+        "Hauteur (m)", validators=[InputRequired(message="La hauteur est requise.")]
+    )
     type = SelectField("Type", choices=[("pm", "Pleine mer"), ("bm", "Basse mer")])
     fuseau_source = SelectField("Fuseau de la table source", choices=FUSEAU_CHOICES)
 

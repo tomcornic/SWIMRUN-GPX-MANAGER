@@ -712,7 +712,13 @@ def maree_importer_csv():
         _flash_form_errors(form)
         return redirect(url_for("orga.maree"))
 
-    contenu = form.fichier.data.read().decode("utf-8")
+    # utf-8-sig : Excel exporte ses CSV avec un BOM, qui se retrouverait sinon collé à la
+    # première date et la rendrait invalide.
+    try:
+        contenu = form.fichier.data.read().decode("utf-8-sig")
+    except UnicodeDecodeError:
+        flash("Fichier illisible : un CSV encodé en UTF-8 est attendu.", "error")
+        return redirect(url_for("orga.maree"))
     try:
         lignes = parser_csv(contenu)
     except CsvMareeInvalideError as exc:
