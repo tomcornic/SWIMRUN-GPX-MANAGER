@@ -56,17 +56,17 @@ def test_create_and_edit_course(logged_in_client, app):
         assert course.color == "#16a34a"
 
 
-def test_max_three_courses_per_event(logged_in_client, app):
+def test_max_five_courses_per_event(logged_in_client, app):
     _create_event(logged_in_client)
-    for i in range(3):
+    for i in range(5):
         response = _create_course(logged_in_client, name=f"Course {i}")
         assert response.status_code == 200
 
     response = _create_course(logged_in_client, name="Course en trop")
-    assert b"Maximum 3 courses" in response.data
+    assert b"Maximum 5 courses" in response.data
 
     with app.app_context():
-        assert Course.query.count() == 3
+        assert Course.query.count() == 5
 
 
 def test_delete_course(logged_in_client, app):

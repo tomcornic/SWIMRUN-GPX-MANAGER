@@ -48,7 +48,7 @@ from app.orga.forms import (
     PoiForm,
 )
 
-MAX_COURSES_PER_EVENT = 3
+MAX_COURSES_PER_EVENT = 5
 
 PACE_FIELDS = (
     ("premier_allure_course", "premier_allure_course_s"),
